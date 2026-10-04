@@ -38,11 +38,11 @@ public class ReporteService implements ReporteUseCase {
         clientes.buscarPorId(id).orElseThrow(() -> new ClienteNoEncontradoException(id));
         Map<String, List<Movimiento>> movimientosAgrupados = movimientos.buscarPorCliente(id, inicio, fin).stream().collect(Collectors.groupingBy(Movimiento::cuentaId));
         List<Cuenta> cuentas = cuentaPersistencePort.buscar(clienteId, null, null);
-        Map<Cuenta, List<Movimiento>> movimientosAgrupadosPorCuenta = movimientosAgrupados.entrySet().stream()
-                .collect(Collectors.toMap(
-                        entry -> cuentas.stream().filter(cuenta -> cuenta.cuentaId().equals(entry.getKey())).findFirst().orElseThrow(),
-                        Map.Entry::getValue
-                ));
+        Map<Cuenta, List<Movimiento>> movimientosAgrupadosPorCuenta = new java.util.LinkedHashMap<>();
+        for (Cuenta cuenta : cuentas) {
+            movimientosAgrupadosPorCuenta.put(cuenta,
+                    movimientosAgrupados.getOrDefault(cuenta.cuentaId(), List.of()));
+        }
         return movimientosAgrupadosPorCuenta;
     }
 }

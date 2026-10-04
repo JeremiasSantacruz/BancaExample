@@ -9,6 +9,7 @@ import santacruz.jeremias.bancaExample.application.command.MovimientoCommand;
 import santacruz.jeremias.bancaExample.application.port.in.MovimientosUseCase;
 import santacruz.jeremias.bancaExample.domain.enums.TipoMovimiento;
 import santacruz.jeremias.bancaExample.domain.model.Movimiento;
+import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.MovimientoEstadoRequest;
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.MovimientoRequest;
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.MovimientoResponse;
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.SaldoExtraccionesDiariasResponse;
@@ -73,9 +74,10 @@ public class MovimientosController {
     @PutMapping("/{movimientoId}")
     public MovimientoResponse actualizar(
             @PathVariable String movimientoId,
-            @Valid @RequestBody MovimientoRequest request
+            @Valid @RequestBody MovimientoEstadoRequest request
     ) {
-        return toResponse(movimientosUseCase.actualizar(movimientoId, toCommand(request)));
+        return toResponse(movimientosUseCase.actualizar(movimientoId,
+                new MovimientoCommand(null, null, null, null, request.estado())));
     }
 
     @DeleteMapping("/{movimientoId}")

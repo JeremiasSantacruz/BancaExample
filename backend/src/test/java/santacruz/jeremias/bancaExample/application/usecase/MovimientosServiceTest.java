@@ -5,16 +5,12 @@ import santacruz.jeremias.bancaExample.application.command.MovimientoCommand;
 import santacruz.jeremias.bancaExample.application.port.in.CalcularSaldoUseCase;
 import santacruz.jeremias.bancaExample.application.port.out.CuentaPersistencePort;
 import santacruz.jeremias.bancaExample.application.port.out.MovimientoPersistencePort;
-import santacruz.jeremias.bancaExample.domain.exception.LimiteExtraccionDiarioExcedidoException;
-import santacruz.jeremias.bancaExample.domain.exception.ClienteNoOperativoException;
-import santacruz.jeremias.bancaExample.domain.exception.CuentaNoOperativaException;
-import santacruz.jeremias.bancaExample.domain.exception.MovimientoNoEncontradoException;
-import santacruz.jeremias.bancaExample.domain.exception.MovimientoNoCorregibleException;
-import santacruz.jeremias.bancaExample.domain.exception.SaldoInsuficienteException;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoCliente;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoCuenta;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoTransaccionMovimiento;
 import santacruz.jeremias.bancaExample.domain.enums.TipoMovimiento;
+import santacruz.jeremias.bancaExample.domain.exception.MovimientoNoCorregibleException;
+import santacruz.jeremias.bancaExample.domain.exception.MovimientoNoEncontradoException;
 import santacruz.jeremias.bancaExample.domain.model.EstadoCuentaMovimiento;
 import santacruz.jeremias.bancaExample.domain.model.Movimiento;
 
@@ -27,108 +23,73 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class MovimientosServiceTest {
 
     private final MovimientoPersistencePort persistence = mock(MovimientoPersistencePort.class);
-    private final CalcularSaldoUseCase saldo = mock(CalcularSaldoUseCase.class);
+    private final CalcularSaldoUseCase saldo = new santacruz.jeremias.bancaExample.application.usecase.calcularSaldos.SaldoAhorroUseCase();
     private final CuentaPersistencePort cuenta = mock(CuentaPersistencePort.class);
     private final MovimientosService service = new MovimientosService(persistence, List.of(saldo), cuenta, new BigDecimal("1000.00"));
 
+    @org.junit.jupiter.api.BeforeEach
+    void prepararPersistencia() {
+        when(cuenta.buscarPorId("7")).thenReturn(Optional.of(new santacruz.jeremias.bancaExample.domain.model.Cuenta(
+                "7", "9", santacruz.jeremias.bancaExample.domain.enums.TipoCuenta.AHORRO,
+                new BigDecimal("500"), EstadoCuenta.ACTIVA)));
+        when(persistence.obtenerSaldoExtraccionesDiarias("7", fecha().toLocalDate())).thenReturn(BigDecimal.ZERO);
+        when(persistence.guardar(any())).thenAnswer(invocation -> {
+            Movimiento m = invocation.getArgument(0);
+            return new Movimiento("42", m.cuentaId(), m.fecha(), m.tipoMovimiento(), m.valor(), m.estado());
+        });
+    }
     @Test
     void shouldCreateMovimientoAndReturnGeneratedId() {
         when(persistence.obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate()))
                 .thenReturn(estadoCuenta(new BigDecimal("500.00"), BigDecimal.ZERO));
-        when(persistence.guardar(any(Movimiento.class))).thenAnswer(invocation -> {
-            Movimiento movimiento = invocation.getArgument(0);
-            return new Movimiento(
-                    "42",
-                    movimiento.cuentaId(),
-                    movimiento.fecha(),
-                    movimiento.tipoMovimiento(),
-                    movimiento.valor(),
-                    movimiento.estado()
-            );
-        });
-
         Movimiento creado = service.crearMovimiento(command());
-
         assertThat(creado.movimientoId()).isEqualTo("42");
-        assertThat(creado.cuentaId()).isEqualTo("7");
-        assertThat(creado.tipoMovimiento()).isEqualTo(TipoMovimiento.RETIRO);
+        assertThat(creado.estado()).isEqualTo(EstadoTransaccionMovimiento.APPROVED);
         assertThat(creado.valor()).isEqualByComparingTo("125.50");
-        verify(persistence).guardar(any(Movimiento.class));
-        verify(persistence).obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate());
         verify(persistence).actualizarSaldoBloqueado("7", new BigDecimal("374.50"));
     }
-
     @Test
     void shouldIncreaseStoredBalanceWhenCreatingAppliedCredit() {
-        MovimientoCommand credito = new MovimientoCommand(
-                "7", fecha(), TipoMovimiento.DEPOSITO, new BigDecimal("125.50"), EstadoTransaccionMovimiento.APPROVED
-        );
         when(persistence.obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate()))
                 .thenReturn(estadoCuenta(new BigDecimal("500.00"), BigDecimal.ZERO));
-        when(persistence.guardar(any(Movimiento.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        service.crearMovimiento(credito);
-
+        Movimiento creado = service.crearMovimiento(new MovimientoCommand("7", fecha(), TipoMovimiento.DEPOSITO,
+                new BigDecimal("125.50"), EstadoTransaccionMovimiento.APPROVED));
+        assertThat(creado.estado()).isEqualTo(EstadoTransaccionMovimiento.APPROVED);
         verify(persistence).actualizarSaldoBloqueado("7", new BigDecimal("625.50"));
     }
-
     @Test
-    void shouldRejectWithdrawalWhenBalanceIsInsufficient() {
+    void shouldRecordRejectedWithdrawalWhenBalanceIsInsufficient() {
         when(persistence.obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate()))
                 .thenReturn(estadoCuenta(new BigDecimal("100.00"), BigDecimal.ZERO));
-
-        assertThatThrownBy(() -> service.crearMovimiento(command()))
-                .isInstanceOf(SaldoInsuficienteException.class);
-
+        assertThat(service.crearMovimiento(command()).estado()).isEqualTo(EstadoTransaccionMovimiento.REJECTED);
         verify(persistence, never()).actualizarSaldoBloqueado(any(), any());
-        verify(persistence, never()).guardar(any(Movimiento.class));
     }
-
     @Test
-    void shouldRejectWithdrawalWhenDailyLimitWouldBeExceeded() {
+    void shouldRecordRejectedWithdrawalWhenDailyLimitWouldBeExceeded() {
         when(persistence.obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate()))
-                .thenReturn(estadoCuenta(new BigDecimal("2000.00"), new BigDecimal("900.00")));
-
-        assertThatThrownBy(() -> service.crearMovimiento(command()))
-                .isInstanceOf(LimiteExtraccionDiarioExcedidoException.class);
-
+                .thenReturn(estadoCuenta(new BigDecimal("2000"), new BigDecimal("900")));
+        when(persistence.obtenerSaldoExtraccionesDiarias("7", fecha().toLocalDate())).thenReturn(new BigDecimal("900"));
+        assertThat(service.crearMovimiento(command()).estado()).isEqualTo(EstadoTransaccionMovimiento.REJECTED);
         verify(persistence, never()).actualizarSaldoBloqueado(any(), any());
-        verify(persistence, never()).guardar(any(Movimiento.class));
     }
-
     @Test
-    void shouldRejectMovementForBlockedClienteWithoutUpdatingBalance() {
-        when(persistence.obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate()))
-                .thenReturn(new EstadoCuentaMovimiento(
-                        "9", new BigDecimal("500.00"), BigDecimal.ZERO, EstadoCuenta.ACTIVA, EstadoCliente.BLOQUEADO
-                ));
-
-        assertThatThrownBy(() -> service.crearMovimiento(command()))
-                .isInstanceOf(ClienteNoOperativoException.class);
+    void shouldRecordRejectedMovementForBlockedClienteWithoutUpdatingBalance() {
+        when(persistence.obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate())).thenReturn(
+                new EstadoCuentaMovimiento("9", new BigDecimal("500"), BigDecimal.ZERO, EstadoCuenta.ACTIVA, EstadoCliente.BLOQUEADO));
+        assertThat(service.crearMovimiento(command()).estado()).isEqualTo(EstadoTransaccionMovimiento.REJECTED);
         verify(persistence, never()).actualizarSaldoBloqueado(any(), any());
-        verify(persistence, never()).guardar(any(Movimiento.class));
     }
-
     @Test
-    void shouldRejectMovementForBlockedCuentaWithoutUpdatingBalance() {
-        when(persistence.obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate()))
-                .thenReturn(new EstadoCuentaMovimiento(
-                        "9", new BigDecimal("500.00"), BigDecimal.ZERO, EstadoCuenta.BLOQUEADA, EstadoCliente.ACTIVO
-                ));
-
-        assertThatThrownBy(() -> service.crearMovimiento(command()))
-                .isInstanceOf(CuentaNoOperativaException.class);
+    void shouldRecordRejectedMovementForBlockedCuentaWithoutUpdatingBalance() {
+        when(persistence.obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate())).thenReturn(
+                new EstadoCuentaMovimiento("9", new BigDecimal("500"), BigDecimal.ZERO, EstadoCuenta.BLOQUEADA, EstadoCliente.ACTIVO));
+        assertThat(service.crearMovimiento(command()).estado()).isEqualTo(EstadoTransaccionMovimiento.REJECTED);
         verify(persistence, never()).actualizarSaldoBloqueado(any(), any());
-        verify(persistence, never()).guardar(any(Movimiento.class));
     }
 
     @Test
@@ -166,45 +127,18 @@ class MovimientosServiceTest {
     }
 
     @Test
-    void shouldUpdateExistingMovimiento() {
+    void shouldReverseExistingMovimientoWithoutCreatingCorrection() {
         when(persistence.buscarPorIdBloqueando("42")).thenReturn(Optional.of(movimiento("42")));
         when(persistence.obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate()))
                 .thenReturn(estadoCuenta(new BigDecimal("500.00"), new BigDecimal("125.50")));
-        when(persistence.revertirYGuardarCorreccion(eq("42"), any(Movimiento.class)))
-                .thenAnswer(invocation -> {
-                    Movimiento correccion = invocation.getArgument(1);
-                    return new Movimiento(
-                            "43",
-                            correccion.cuentaId(),
-                            correccion.fecha(),
-                            correccion.tipoMovimiento(),
-                            correccion.valor(),
-                            correccion.estado()
-                    );
-                });
-        MovimientoCommand update = new MovimientoCommand(
-                "7",
-                fecha(),
-                TipoMovimiento.DEPOSITO,
-                new BigDecimal("200.00"),
-                EstadoTransaccionMovimiento.APPROVED
-        );
+        Movimiento reversed = new Movimiento("42", "7", fecha(), TipoMovimiento.RETIRO,
+                new BigDecimal("125.50"), EstadoTransaccionMovimiento.REVERSED);
+        when(persistence.actualizarEstado("42", EstadoTransaccionMovimiento.REVERSED)).thenReturn(reversed);
 
-        Movimiento actualizado = service.actualizar("42", update);
-
-        assertThat(actualizado.movimientoId()).isEqualTo("43");
-        assertThat(actualizado.tipoMovimiento()).isEqualTo(TipoMovimiento.DEPOSITO);
-        assertThat(actualizado.valor()).isEqualByComparingTo("200.00");
-        assertThat(actualizado.estado()).isEqualTo(EstadoTransaccionMovimiento.REVERSED_CORRECTION);
-        verify(persistence).actualizarSaldoBloqueado("7", new BigDecimal("825.50"));
-        verify(persistence).revertirYGuardarCorreccion(
-                eq("42"),
-                org.mockito.ArgumentMatchers.argThat(correccion ->
-                        correccion.movimientoId() == null
-                                && correccion.estado() == EstadoTransaccionMovimiento.REVERSED_CORRECTION
-                                && correccion.tipoMovimiento() == TipoMovimiento.DEPOSITO
-                                && correccion.valor().compareTo(new BigDecimal("200.00")) == 0)
-        );
+        assertThat(service.actualizar("42", new MovimientoCommand(null, null, null, null,
+                EstadoTransaccionMovimiento.REVERSED))).isEqualTo(reversed);
+        verify(persistence).actualizarSaldoBloqueado("7", new BigDecimal("625.50"));
+        verify(persistence, never()).revertirYGuardarCorreccion(any(), any());
     }
 
     @Test
@@ -217,28 +151,12 @@ class MovimientosServiceTest {
     }
 
     @Test
-    void shouldReplaceOriginalWithdrawalInDailyLimitWhenCorrectingIt() {
+    void shouldRejectChangesToMovementAmount() {
         when(persistence.buscarPorIdBloqueando("42")).thenReturn(Optional.of(movimiento("42")));
-        when(persistence.obtenerEstadoCuentaBloqueando("7", fecha().toLocalDate()))
-                .thenReturn(estadoCuenta(new BigDecimal("500.00"), new BigDecimal("950.00")));
-        when(persistence.revertirYGuardarCorreccion(eq("42"), any(Movimiento.class)))
-                .thenAnswer(invocation -> invocation.getArgument(1));
-        MovimientoCommand correctedWithdrawal = new MovimientoCommand(
-                "7",
-                fecha(),
-                TipoMovimiento.RETIRO,
-                new BigDecimal("150.00"),
-                EstadoTransaccionMovimiento.APPROVED
-        );
-
-        service.actualizar("42", correctedWithdrawal);
-
-        verify(persistence).actualizarSaldoBloqueado("7", new BigDecimal("475.50"));
-        verify(persistence).revertirYGuardarCorreccion(
-                eq("42"),
-                org.mockito.ArgumentMatchers.argThat(correccion ->
-                        correccion.estado() == EstadoTransaccionMovimiento.REVERSED_CORRECTION)
-        );
+        MovimientoCommand update = new MovimientoCommand("7", fecha(), TipoMovimiento.RETIRO,
+                new BigDecimal("150.00"), EstadoTransaccionMovimiento.REVERSED);
+        assertThatThrownBy(() -> service.actualizar("42", update)).isInstanceOf(IllegalArgumentException.class);
+        verify(persistence, never()).actualizarSaldoBloqueado(any(), any());
     }
 
     @Test
@@ -256,12 +174,10 @@ class MovimientosServiceTest {
     }
 
     @Test
-    void shouldDeleteExistingMovimiento() {
+    void shouldRejectDeletingExistingMovimiento() {
         when(persistence.buscarPorId("42")).thenReturn(Optional.of(movimiento("42")));
-
-        service.eliminar("42");
-
-        verify(persistence).eliminarPorId("42");
+        assertThatThrownBy(() -> service.eliminar("42")).isInstanceOf(IllegalArgumentException.class);
+        verify(persistence, never()).eliminarPorId(any());
     }
 
     @Test

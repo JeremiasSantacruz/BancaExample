@@ -17,14 +17,14 @@ public interface ClienteJpaRepository extends JpaRepository<ClienteEntity, Long>
     @Query("select c from ClienteEntity c where c.id = :clienteId")
     Optional<ClienteEntity> findByIdForUpdate(@Param("clienteId") Long clienteId);
 
-    @Query("SELECT Count(*) FROM ClienteEntity c where c.estado = :estado")
+    @Query("SELECT Count(*) FROM ClienteEntity c where c.estado = cast(:estado as string)")
     Long countByEstado(@Param("estado") String estado);
 
     @Query("""
             select c from ClienteEntity c
-            where (:nombre is null or locate(lower(:nombre), lower(c.personaEntity.nombre)) > 0)
-              and (:identificacion is null or locate(:identificacion, c.personaEntity.identificacion) > 0)
-              and (:estado is null or upper(c.estado) = :estado)
+            where (cast(:nombre as string) is null or locate(lower(cast(:nombre as string)), lower(c.personaEntity.nombre)) > 0)
+              and (cast(:identificacion as string) is null or locate(cast(:identificacion as string), c.personaEntity.identificacion) > 0)
+              and (cast(:estado as string) is null or upper(c.estado) = cast(:estado as string))
             order by c.id
             """)
     List<ClienteEntity> searchAll(@Param("nombre") String nombre,

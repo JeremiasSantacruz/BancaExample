@@ -1,5 +1,6 @@
 package santacruz.jeremias.bancaExample.domain.enums;
 
+import java.util.List;
 import java.util.Locale;
 
 public enum EstadoTransaccionMovimiento {
@@ -17,5 +18,9 @@ public enum EstadoTransaccionMovimiento {
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("Estado de movimiento no válido: " + estado, exception);
         }
+    }
+
+    public static List<EstadoTransaccionMovimiento> getNotReversible() {
+        return List.of(REVERSED_CORRECTION, REVERSED, REJECTED);
     }
 }

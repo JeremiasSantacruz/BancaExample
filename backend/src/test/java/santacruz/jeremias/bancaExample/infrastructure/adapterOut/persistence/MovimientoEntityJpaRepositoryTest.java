@@ -64,7 +64,7 @@ class MovimientoEntityJpaRepositoryTest {
         MovimientoEntity movimientoEntity = movimientoJpaRepository.saveAndFlush(
                 new MovimientoEntity(
                         cuentaEntity, fecha, TipoMovimiento.RETIRO, new BigDecimal("125.50"),
-                        EstadoTransaccionMovimiento.APLICADO
+                        EstadoTransaccionMovimiento.APPROVED
                 )
         );
         entityManager.clear();
@@ -80,7 +80,7 @@ class MovimientoEntityJpaRepositoryTest {
                 "select tipo_movimiento from movimientos where id = ?",
                 String.class,
                 movimientoEntity.getId()
-        )).isEqualTo("DEBITO");
+        )).isEqualTo("RETIRO");
         assertThat(primaryKeyColumn()).isEqualTo("id");
         assertThat(foreignKeyColumn()).isEqualTo("cuenta_id");
     }
@@ -90,11 +90,11 @@ class MovimientoEntityJpaRepositoryTest {
         CuentaEntity cuentaEntity = crearCuenta();
         movimientoJpaRepository.save(new MovimientoEntity(
                 cuentaEntity, LocalDateTime.of(2026, 10, 2, 10, 0), TipoMovimiento.DEPOSITO,
-                new BigDecimal("200.00"), EstadoTransaccionMovimiento.APLICADO
+                new BigDecimal("200.00"), EstadoTransaccionMovimiento.APPROVED
         ));
         movimientoJpaRepository.save(new MovimientoEntity(
                 cuentaEntity, LocalDateTime.of(2026, 10, 2, 11, 0), TipoMovimiento.RETIRO,
-                new BigDecimal("50.00"), EstadoTransaccionMovimiento.APLICADO
+                new BigDecimal("50.00"), EstadoTransaccionMovimiento.APPROVED
         ));
         movimientoJpaRepository.flush();
         entityManager.clear();
@@ -114,19 +114,19 @@ class MovimientoEntityJpaRepositoryTest {
         LocalDate fecha = LocalDate.of(2026, 10, 2);
         movimientoJpaRepository.save(new MovimientoEntity(
                 cuentaEntity, fecha.atTime(0, 0), TipoMovimiento.RETIRO,
-                new BigDecimal("50.00"), EstadoTransaccionMovimiento.APLICADO
+                new BigDecimal("50.00"), EstadoTransaccionMovimiento.APPROVED
         ));
         movimientoJpaRepository.save(new MovimientoEntity(
                 cuentaEntity, fecha.atTime(23, 59), TipoMovimiento.RETIRO,
-                new BigDecimal("25.50"), EstadoTransaccionMovimiento.APLICADO
+                new BigDecimal("25.50"), EstadoTransaccionMovimiento.APPROVED
         ));
         movimientoJpaRepository.save(new MovimientoEntity(
                 cuentaEntity, fecha.atTime(12, 0), TipoMovimiento.DEPOSITO,
-                new BigDecimal("300.00"), EstadoTransaccionMovimiento.APLICADO
+                new BigDecimal("300.00"), EstadoTransaccionMovimiento.APPROVED
         ));
         movimientoJpaRepository.save(new MovimientoEntity(
                 cuentaEntity, fecha.atTime(13, 0), TipoMovimiento.RETIRO,
-                new BigDecimal("90.00"), EstadoTransaccionMovimiento.ANULADO
+                new BigDecimal("90.00"), EstadoTransaccionMovimiento.REJECTED
         ));
         movimientoJpaRepository.save(new MovimientoEntity(
                 cuentaEntity, fecha.atTime(14, 0), TipoMovimiento.RETIRO,
@@ -138,7 +138,7 @@ class MovimientoEntityJpaRepositoryTest {
         ));
         movimientoJpaRepository.save(new MovimientoEntity(
                 cuentaEntity, fecha.plusDays(1).atStartOfDay(), TipoMovimiento.RETIRO,
-                new BigDecimal("70.00"), EstadoTransaccionMovimiento.APLICADO
+                new BigDecimal("70.00"), EstadoTransaccionMovimiento.APPROVED
         ));
         movimientoJpaRepository.flush();
         entityManager.clear();
@@ -149,7 +149,7 @@ class MovimientoEntityJpaRepositoryTest {
                 fecha.plusDays(1).atStartOfDay(),
                 TipoMovimiento.RETIRO,
                 java.util.List.of(
-                        EstadoTransaccionMovimiento.APLICADO,
+                        EstadoTransaccionMovimiento.APPROVED,
                         EstadoTransaccionMovimiento.REVERSED_CORRECTION
                 )
         );

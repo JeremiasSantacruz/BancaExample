@@ -56,6 +56,10 @@ public class ClienteService implements ClienteUseCase {
     @Transactional
     public Cliente actualizar(String clienteId, ClienteCommand command) {
         Cliente actual = obtenerPorId(clienteId);
+        if (!actual.identificacion().equals(command.identificacion())
+                && clientePersistence.existePorIdentificacion(command.identificacion())) {
+            throw new ClienteDuplicadoException(command.identificacion());
+        }
         EstadoCliente nuevoEstado = EstadoCliente.from(command.estado());
         Cliente actualizado = toDomain(actual.clienteId(), command, false);
         if (nuevoEstado == EstadoCliente.INACTIVO) {

@@ -22,6 +22,8 @@ public interface MovimientoPersistencePort {
 
     Optional<Movimiento> buscarPorIdBloqueando(String movimientoId);
 
+    Movimiento actualizarEstado(String movimientoId, santacruz.jeremias.bancaExample.domain.enums.EstadoTransaccionMovimiento estado);
+
     Movimiento revertirYGuardarCorreccion(String movimientoId, Movimiento correccion);
 
     void eliminarPorId(String movimientoId);

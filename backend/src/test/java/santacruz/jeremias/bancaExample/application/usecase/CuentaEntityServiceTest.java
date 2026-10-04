@@ -1,12 +1,14 @@
 package santacruz.jeremias.bancaExample.application.usecase;
 
 import org.junit.jupiter.api.Test;
+import santacruz.jeremias.bancaExample.application.command.CreateCuentaCommand;
 import santacruz.jeremias.bancaExample.application.command.CuentaCommand;
 import santacruz.jeremias.bancaExample.application.port.out.CuentaPersistencePort;
-import santacruz.jeremias.bancaExample.domain.enums.EstadoCuenta;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoCliente;
-import santacruz.jeremias.bancaExample.domain.exception.CuentaNoEncontradaException;
+import santacruz.jeremias.bancaExample.domain.enums.EstadoCuenta;
+import santacruz.jeremias.bancaExample.domain.enums.TipoCuenta;
 import santacruz.jeremias.bancaExample.domain.exception.ClienteNoOperativoException;
+import santacruz.jeremias.bancaExample.domain.exception.CuentaNoEncontradaException;
 import santacruz.jeremias.bancaExample.domain.model.Cliente;
 import santacruz.jeremias.bancaExample.domain.model.Cuenta;
 import santacruz.jeremias.bancaExample.domain.model.Persona;
@@ -18,10 +20,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class CuentaEntityServiceTest {
 
@@ -37,12 +36,12 @@ class CuentaEntityServiceTest {
             return new Cuenta("42", cuenta.clienteId(), cuenta.tipoCuenta(), cuenta.saldo(), cuenta.estado());
         });
 
-        Cuenta creada = service.crear(command());
+        Cuenta creada = service.crear(new CreateCuentaCommand("7", "AHORRO"));
 
         assertThat(creada.cuentaId()).isEqualTo("42");
         assertThat(creada.clienteId()).isEqualTo("7");
-        assertThat(creada.tipoCuenta()).isEqualTo("AHORRO");
-        assertThat(creada.saldo()).isEqualByComparingTo("1250.75");
+        assertThat(creada.tipoCuenta()).isEqualTo(TipoCuenta.AHORRO);
+        assertThat(creada.saldo()).isEqualByComparingTo("0");
         verify(persistence).guardar(any(Cuenta.class));
     }
 
@@ -50,7 +49,7 @@ class CuentaEntityServiceTest {
     void shouldNotCreateCuentaForBlockedCliente() {
         when(clienteService.obtenerPorId("7")).thenReturn(cliente(EstadoCliente.BLOQUEADO));
 
-        assertThatThrownBy(() -> service.crear(command()))
+        assertThatThrownBy(() -> service.crear(new CreateCuentaCommand("7", "AHORRO")))
                 .isInstanceOf(ClienteNoOperativoException.class);
 
         verify(persistence, never()).guardar(any(Cuenta.class));
@@ -58,10 +57,10 @@ class CuentaEntityServiceTest {
 
     @Test
     void shouldReturnAllCuentas() {
-        when(persistence.listarTodas()).thenReturn(List.of(cuenta("42"), cuenta("43")));
+        when(persistence.listarTodas(7L)).thenReturn(List.of(cuenta("42"), cuenta("43")));
 
-        assertThat(service.obtenerTodas()).extracting(Cuenta::cuentaId).containsExactly("42", "43");
-        verify(persistence).listarTodas();
+        assertThat(service.obtenerTodas("7")).extracting(Cuenta::cuentaId).containsExactly("42", "43");
+        verify(persistence).listarTodas(7L);
     }
 
     @Test
@@ -90,7 +89,7 @@ class CuentaEntityServiceTest {
         Cuenta actualizada = service.actualizar("42", update);
 
         assertThat(actualizada.cuentaId()).isEqualTo("42");
-        assertThat(actualizada.tipoCuenta()).isEqualTo("CORRIENTE");
+        assertThat(actualizada.tipoCuenta()).isEqualTo(TipoCuenta.CORRIENTE);
         assertThat(actualizada.saldo()).isEqualByComparingTo("2000.00");
         assertThat(actualizada.estado()).isEqualTo(EstadoCuenta.INACTIVA);
         verify(persistence).actualizar(any(Cuenta.class));
@@ -144,7 +143,7 @@ class CuentaEntityServiceTest {
     }
 
     private Cuenta cuenta(String id) {
-        return new Cuenta(id, "7", "AHORRO", new BigDecimal("1250.75"), EstadoCuenta.ACTIVA);
+        return new Cuenta(id, "7", TipoCuenta.AHORRO, new BigDecimal("1250.75"), EstadoCuenta.ACTIVA);
     }
 
     private Cliente cliente(EstadoCliente estado) {

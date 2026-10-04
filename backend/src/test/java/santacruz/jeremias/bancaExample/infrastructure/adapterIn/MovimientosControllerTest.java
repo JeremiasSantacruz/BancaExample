@@ -18,17 +18,10 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MovimientosController.class)
 class MovimientosControllerTest {
@@ -87,17 +80,19 @@ class MovimientosControllerTest {
     }
 
     @Test
-    void shouldUpdateAndDeleteMovimiento() throws Exception {
+    void shouldReverseMovimientoAndRejectDeletion() throws Exception {
         when(movimientosUseCase.actualizar(eq("42"), any(MovimientoCommand.class))).thenReturn(movimiento());
 
         mockMvc.perform(put("/movimientos/42")
                         .contentType(APPLICATION_JSON)
-                        .content(requestJson("DEPOSITO", "200.00")))
+                        .content("{\"estado\":\"REVERSED\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.movimientoId").value("42"));
 
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("Solo se permiten reversas"))
+                .when(movimientosUseCase).eliminar("42");
         mockMvc.perform(delete("/movimientos/42"))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isBadRequest());
 
         verify(movimientosUseCase).actualizar(eq("42"), any(MovimientoCommand.class));
         verify(movimientosUseCase).eliminar("42");
@@ -112,7 +107,7 @@ class MovimientosControllerTest {
                                   "cuentaId": "7",
                                   "tipoMovimiento": "RETIRO",
                                   "valor": 0,
-                                  "estado": "APLICADO"
+                                  "estado": "APPROVED"
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
@@ -140,7 +135,7 @@ class MovimientosControllerTest {
                 LocalDateTime.of(2026, 10, 2, 12, 30),
                 TipoMovimiento.RETIRO,
                 new BigDecimal("125.50"),
-                EstadoTransaccionMovimiento.APLICADO
+                EstadoTransaccionMovimiento.APPROVED
         );
     }
 
@@ -151,7 +146,7 @@ class MovimientosControllerTest {
                   "fecha": "2026-10-02T12:30:00",
                   "tipoMovimiento": "%s",
                   "valor": %s,
-                  "estado": "APLICADO"
+                  "estado": "APPROVED"
                 }
                 """.formatted(tipoMovimiento, valor);
     }

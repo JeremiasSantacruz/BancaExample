@@ -5,9 +5,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import santacruz.jeremias.bancaExample.application.command.CreateCuentaCommand;
 import santacruz.jeremias.bancaExample.application.command.CuentaCommand;
 import santacruz.jeremias.bancaExample.application.port.in.CuentaUseCase;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoCuenta;
+import santacruz.jeremias.bancaExample.domain.enums.TipoCuenta;
 import santacruz.jeremias.bancaExample.domain.model.Cuenta;
 
 import java.math.BigDecimal;
@@ -18,11 +20,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,7 +35,7 @@ class CuentaEntityControllerTest {
 
     @Test
     void shouldCreateCuentaAndReturnLocation() throws Exception {
-        when(cuentaUseCase.crear(any(CuentaCommand.class))).thenReturn(cuenta());
+        when(cuentaUseCase.crear(any(CreateCuentaCommand.class))).thenReturn(cuenta());
 
         mockMvc.perform(post("/cuentas")
                         .contentType(APPLICATION_JSON)
@@ -54,22 +52,22 @@ class CuentaEntityControllerTest {
                 .andExpect(jsonPath("$.clienteId").value("7"))
                 .andExpect(jsonPath("$.saldo").value(1250.75));
 
-        verify(cuentaUseCase).crear(any(CuentaCommand.class));
+        verify(cuentaUseCase).crear(any(CreateCuentaCommand.class));
     }
 
     @Test
     void shouldListAndGetCuentas() throws Exception {
-        when(cuentaUseCase.obtenerTodas()).thenReturn(List.of(cuenta()));
+        when(cuentaUseCase.obtenerTodas("7")).thenReturn(List.of(cuenta()));
         when(cuentaUseCase.obtenerPorId("42")).thenReturn(cuenta());
 
-        mockMvc.perform(get("/cuentas"))
+        mockMvc.perform(get("/cuentas/7"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].tipoCuenta").value("AHORRO"));
-        mockMvc.perform(get("/cuentas/42"))
+        mockMvc.perform(get("/cuentas/7/42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cuentaId").value("42"));
 
-        verify(cuentaUseCase).obtenerTodas();
+        verify(cuentaUseCase).obtenerTodas("7");
         verify(cuentaUseCase).obtenerPorId("42");
     }
 
@@ -77,7 +75,7 @@ class CuentaEntityControllerTest {
     void shouldUpdateAndDeleteCuenta() throws Exception {
         when(cuentaUseCase.actualizar(eq("42"), any(CuentaCommand.class))).thenReturn(cuenta());
 
-        mockMvc.perform(put("/cuentas/42")
+        mockMvc.perform(put("/cuentas/7/42")
                         .contentType(APPLICATION_JSON)
                         .content("""
                                 {
@@ -90,7 +88,7 @@ class CuentaEntityControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cuentaId").value("42"));
 
-        mockMvc.perform(delete("/cuentas/42"))
+        mockMvc.perform(delete("/cuentas/7/42"))
                 .andExpect(status().isNoContent());
 
         verify(cuentaUseCase).actualizar(eq("42"), any(CuentaCommand.class));
@@ -98,6 +96,6 @@ class CuentaEntityControllerTest {
     }
 
     private Cuenta cuenta() {
-        return new Cuenta("42", "7", "AHORRO", new BigDecimal("1250.75"), EstadoCuenta.ACTIVA);
+        return new Cuenta("42", "7", TipoCuenta.AHORRO, new BigDecimal("1250.75"), EstadoCuenta.ACTIVA);
     }
 }

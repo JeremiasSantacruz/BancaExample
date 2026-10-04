@@ -19,11 +19,11 @@ import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.PersonaEn
 import santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence.ClienteJpaRepository;
 import santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence.CuentaJpaRepository;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CyclicBarrier;
@@ -67,77 +67,30 @@ class MovimientosHttpIntegrationTest {
     private int port;
 
     @Test
-    void shouldCreateReadUpdateAndDeleteMovimientoOverHttp() throws Exception {
+    void shouldCreateReadReverseAndRejectDeletingMovimientoOverHttp() throws Exception {
         CuentaEntity cuentaEntity = crearCuenta();
         HttpClient httpClient = HttpClient.newHttpClient();
-        HttpResponse<String> createResponse = send(
-                httpClient,
-                HttpRequest.newBuilder(uri("/movimientos"))
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(
-                                movimientoRequest(cuentaEntity.getId(), "RETIRO", "125.50")
-                        ))
-                        .build()
-        );
-
-        assertThat(createResponse.statusCode()).isEqualTo(201);
-        String location = createResponse.headers().firstValue("Location").orElseThrow();
-        String movimientoId = extractId(createResponse.body());
-        assertThat(movimientoId).isNotBlank();
-        assertThat(createResponse.body()).contains("\"tipoMovimiento\":\"RETIRO\"");
-        assertThat(createResponse.body()).contains("\"cuentaId\":\"" + cuentaEntity.getId() + "\"");
-
-        HttpResponse<String> readResponse = send(
-                httpClient,
-                HttpRequest.newBuilder(URI.create(location)).GET().build()
-        );
-        assertThat(readResponse.statusCode()).isEqualTo(200);
-        assertThat(extractId(readResponse.body())).isEqualTo(movimientoId);
-
-        HttpResponse<String> updateResponse = send(
-                httpClient,
-                HttpRequest.newBuilder(URI.create(location))
-                        .header("Content-Type", "application/json")
-                        .PUT(HttpRequest.BodyPublishers.ofString(
-                                movimientoRequest(cuentaEntity.getId(), "DEPOSITO", "200.00")
-                        ))
-                        .build()
-        );
-        assertThat(updateResponse.statusCode()).isEqualTo(200);
-        assertThat(updateResponse.body()).contains("\"tipoMovimiento\":\"DEPOSITO\"");
-        assertThat(updateResponse.body()).contains("\"estado\":\"REVERSED_CORRECTION\"");
-        String correctionId = extractId(updateResponse.body());
-        assertThat(correctionId).isNotEqualTo(movimientoId);
-
-        HttpResponse<String> originalAfterCorrection = send(
-                httpClient,
-                HttpRequest.newBuilder(URI.create(location)).GET().build()
-        );
-        assertThat(originalAfterCorrection.statusCode()).isEqualTo(200);
-        assertThat(originalAfterCorrection.body()).contains("\"estado\":\"REVERSED\"");
-        assertThat(extractId(originalAfterCorrection.body())).isEqualTo(movimientoId);
+        HttpResponse<String> creado = createMovimiento(httpClient, cuentaEntity.getId(), "RETIRO", "125.50");
+        assertThat(creado.statusCode()).isEqualTo(201);
+        assertThat(creado.body()).contains("\"estado\":\"APPROVED\"");
+        String location = creado.headers().firstValue("Location").orElseThrow();
+        String id = extractId(creado.body());
+        HttpResponse<String> reversado = send(httpClient, HttpRequest.newBuilder(URI.create(location))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString("{\"estado\":\"REVERSED\"}")).build());
+        assertThat(reversado.statusCode()).isEqualTo(200);
+        assertThat(extractId(reversado.body())).isEqualTo(id);
+        assertThat(reversado.body()).contains("\"estado\":\"REVERSED\"", "\"tipoMovimiento\":\"RETIRO\"", "\"valor\":125.50");
         assertThat(cuentaJpaRepository.findById(cuentaEntity.getId()).orElseThrow().getSaldoActual())
-                .isEqualByComparingTo("1200.00");
-
-        HttpResponse<String> listResponse = send(
-                httpClient,
-                HttpRequest.newBuilder(uri("/movimientos")).GET().build()
-        );
-        assertThat(listResponse.statusCode()).isEqualTo(200);
-        assertThat(listResponse.body()).contains("\"movimientoId\":\"" + movimientoId + "\"");
-        assertThat(listResponse.body()).contains("\"movimientoId\":\"" + correctionId + "\"");
-
-        HttpResponse<String> deleteResponse = send(
-                httpClient,
-                HttpRequest.newBuilder(URI.create(location)).DELETE().build()
-        );
-        assertThat(deleteResponse.statusCode()).isEqualTo(204);
-
-        HttpResponse<String> missingResponse = send(
-                httpClient,
-                HttpRequest.newBuilder(URI.create(location)).GET().build()
-        );
-        assertThat(missingResponse.statusCode()).isEqualTo(404);
+                .isEqualByComparingTo("1000.00");
+        HttpResponse<String> segundaReversa = send(httpClient, HttpRequest.newBuilder(URI.create(location))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString("{\"estado\":\"REVERSED\"}")).build());
+        assertThat(segundaReversa.statusCode()).isEqualTo(422);
+        assertThat(send(httpClient, HttpRequest.newBuilder(URI.create(location)).DELETE().build()).statusCode()).isEqualTo(400);
+        assertThat(send(httpClient, HttpRequest.newBuilder(URI.create(location)).GET().build()).statusCode()).isEqualTo(200);
+        assertThat(cuentaJpaRepository.findById(cuentaEntity.getId()).orElseThrow().getSaldoActual())
+                .isEqualByComparingTo("1000.00");
     }
 
     @Test
@@ -180,8 +133,10 @@ class MovimientosHttpIntegrationTest {
                         .build()
         );
 
-        assertThat(response.statusCode()).isEqualTo(422);
-        assertThat(response.body()).contains("Saldo insuficiente");
+        assertThat(response.statusCode()).isEqualTo(201);
+        assertThat(response.body()).contains("\"estado\":\"REJECTED\"");
+        assertThat(cuentaJpaRepository.findById(cuentaEntity.getId()).orElseThrow().getSaldoActual())
+                .isEqualByComparingTo("100.00");
     }
 
     @Test
@@ -192,8 +147,10 @@ class MovimientosHttpIntegrationTest {
         HttpResponse<String> secondResponse = createMovimiento(httpClient, cuentaEntity.getId(), "RETIRO", "500.00");
 
         assertThat(firstResponse.statusCode()).isEqualTo(201);
-        assertThat(secondResponse.statusCode()).isEqualTo(422);
-        assertThat(secondResponse.body()).contains("límite diario");
+        assertThat(secondResponse.statusCode()).isEqualTo(201);
+        assertThat(secondResponse.body()).contains("\"estado\":\"REJECTED\"");
+        assertThat(cuentaJpaRepository.findById(cuentaEntity.getId()).orElseThrow().getSaldoActual())
+                .isEqualByComparingTo("4400.00");
     }
 
     @Test
@@ -220,7 +177,11 @@ class MovimientosHttpIntegrationTest {
             HttpResponse<String> secondResponse = second.join();
 
             assertThat(List.of(firstResponse.statusCode(), secondResponse.statusCode()))
-                    .containsExactlyInAnyOrder(201, 422);
+                    .containsExactly(201, 201);
+            assertThat(List.of(firstResponse.body(), secondResponse.body()))
+                    .filteredOn(body -> body.contains("\"estado\":\"APPROVED\"")).hasSize(1);
+            assertThat(List.of(firstResponse.body(), secondResponse.body()))
+                    .filteredOn(body -> body.contains("\"estado\":\"REJECTED\"")).hasSize(1);
         }
         assertThat(cuentaJpaRepository.findById(cuentaEntity.getId()).orElseThrow().getSaldoActual())
                 .isEqualByComparingTo("300.00");
@@ -365,7 +326,7 @@ class MovimientosHttpIntegrationTest {
                   "fecha": "2026-10-02T12:30:00",
                   "tipoMovimiento": "%s",
                   "valor": %s,
-                  "estado": "APLICADO"
+                  "estado": "APPROVED"
                 }
                 """.formatted(cuentaId, tipoMovimiento, valor);
     }

@@ -23,15 +23,6 @@ import java.util.List;
 
 @Service
 public class MovimientosService implements MovimientosUseCase {
-    @Override
-    @Transactional(readOnly = true)
-    public List<Movimiento> buscar(String cuentaId, LocalDate inicio, LocalDate fin) {
-        if (inicio != null && fin != null && inicio.isAfter(fin)) {
-            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin.");
-        }
-        return movimientoPersistence.buscar(FiltrosBusqueda.id(cuentaId), inicio, fin);
-    }
-
 
     private static final Logger logger = LoggerFactory.getLogger(MovimientosService.class);
 
@@ -57,30 +48,23 @@ public class MovimientosService implements MovimientosUseCase {
             logger.info("Creando movimiento: {}", command);
             Movimiento movimiento = toDomain(null, command);
             validarMovimiento(movimiento);
-            if (movimiento.estado() == EstadoTransaccionMovimiento.REVERSED
-                    || movimiento.estado() == EstadoTransaccionMovimiento.REVERSED_CORRECTION) {
+            if (EstadoTransaccionMovimiento.getNotReversible().contains(movimiento.estado())) {
                 throw new IllegalArgumentException("Los estados de reversa solo se asignan durante una corrección.");
+            }
+            EstadoCuentaMovimiento estadoCuenta = movimientoPersistence.obtenerEstadoCuentaBloqueando(
+                    movimiento.cuentaId(), movimiento.fecha().toLocalDate());
+            if (!estadoCuenta.estadoCliente().esOperativo()) {
+                throw new ClienteNoOperativoException(estadoCuenta.clienteId());
             }
             Cuenta cuenta = cuentaPersistencePort.buscarPorId(movimiento.cuentaId())
                     .orElseThrow(() -> new CuentaNoEncontradaException(movimiento.cuentaId()));
+            cuenta = new Cuenta(cuenta.cuentaId(), cuenta.clienteId(), cuenta.tipoCuenta(),
+                    estadoCuenta.saldoActual(), estadoCuenta.estadoCuenta());
             if (!cuenta.estado().esOperativa()) {
                 throw new CuentaNoOperativaException(movimiento.cuentaId());
             }
-            if (command.tipoMovimiento().equals(TipoMovimiento.RETIRO)) {
-                BigDecimal saldoExtraccionesDiarias = movimientoPersistence.obtenerSaldoExtraccionesDiarias(
-                        movimiento.cuentaId(),
-                        movimiento.fecha().toLocalDate()
-                );
-                if (saldoExtraccionesDiarias.add(movimiento.valor()).compareTo(maximoRetiroDiario) > 0) {
-                    throw new LimiteExtraccionDiarioExcedidoException(movimiento.cuentaId());
-                }
-            }
-            CalcularSaldoUseCase calcularSaldoUseCase = calcularSaldoUseCases.stream()
-                    .filter(s -> s.support(cuenta.tipoCuenta()))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("No se encontró un caso de uso para el tipo de movimiento: " + cuenta.tipoCuenta()));
-            BigDecimal valorMovimiento = movimiento.tipoMovimiento() == TipoMovimiento.RETIRO ? movimiento.valor().negate() : movimiento.valor();
-            BigDecimal saldoNuevo = calcularSaldoUseCase.calcularSaldo(cuenta.saldo(), valorMovimiento);
+            validarLimiteDiarioDeExtraccion(command, movimiento);
+            BigDecimal saldoNuevo = getSaldoNuevo(cuenta, movimiento);
             movimientoPersistence.actualizarSaldoBloqueado(movimiento.cuentaId(), saldoNuevo);
             Movimiento creado = movimientoPersistence.guardar(movimiento);
             logger.info(
@@ -96,7 +80,38 @@ public class MovimientosService implements MovimientosUseCase {
             Movimiento movimiento = toDomainAnulado(null, command);
             return movimientoPersistence.guardar(movimiento);
         }
-}
+    }
+
+    private BigDecimal getSaldoNuevo(Cuenta cuenta, Movimiento movimiento) {
+        CalcularSaldoUseCase calcularSaldoUseCase = calcularSaldoUseCases.stream()
+                .filter(s -> s.support(cuenta.tipoCuenta()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No se encontró un caso de uso para el tipo de movimiento: " + cuenta.tipoCuenta()));
+        BigDecimal valorMovimiento = movimiento.tipoMovimiento() == TipoMovimiento.RETIRO ? movimiento.valor().negate() : movimiento.valor();
+        BigDecimal saldoNuevo = calcularSaldoUseCase.calcularSaldo(cuenta.saldo(), valorMovimiento);
+        return saldoNuevo;
+    }
+
+    private void validarLimiteDiarioDeExtraccion(MovimientoCommand command, Movimiento movimiento) {
+        if (command.tipoMovimiento().equals(TipoMovimiento.RETIRO)) {
+            BigDecimal saldoExtraccionesDiarias = movimientoPersistence.obtenerSaldoExtraccionesDiarias(
+                    movimiento.cuentaId(),
+                    movimiento.fecha().toLocalDate()
+            );
+            if (saldoExtraccionesDiarias.add(movimiento.valor()).compareTo(maximoRetiroDiario) > 0) {
+                throw new LimiteExtraccionDiarioExcedidoException(movimiento.cuentaId());
+            }
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Movimiento> buscar(String cuentaId, LocalDate inicio, LocalDate fin) {
+        if (inicio != null && fin != null && inicio.isAfter(fin)) {
+            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin.");
+        }
+        return movimientoPersistence.buscar(FiltrosBusqueda.id(cuentaId), inicio, fin);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -119,63 +134,27 @@ public class MovimientosService implements MovimientosUseCase {
         if (original.estado() != EstadoTransaccionMovimiento.APPROVED) {
             throw new MovimientoNoCorregibleException(movimientoId);
         }
-        if (!original.cuentaId().equals(command.cuentaId())) {
-            throw new IllegalArgumentException("La corrección debe pertenecer a la misma cuenta del movimiento original.");
+        if (command.estado() != EstadoTransaccionMovimiento.REVERSED) {
+            throw new IllegalArgumentException("Solo se permite reversar el movimiento.");
         }
-
-        Movimiento correccion = new Movimiento(
-                null,
-                original.cuentaId(),
-                command.fecha(),
-                command.tipoMovimiento(),
-                command.valor(),
-                EstadoTransaccionMovimiento.REVERSED_CORRECTION
-        );
-        validarMovimiento(correccion);
-
+        if ((command.cuentaId() != null && !original.cuentaId().equals(command.cuentaId()))
+                || (command.fecha() != null && !original.fecha().equals(command.fecha()))
+                || (command.tipoMovimiento() != null && original.tipoMovimiento() != command.tipoMovimiento())
+                || (command.valor() != null && original.valor().compareTo(command.valor()) != 0)) {
+            throw new IllegalArgumentException("Solo se puede modificar el estado del movimiento.");
+        }
         EstadoCuentaMovimiento estadoCuenta = movimientoPersistence.obtenerEstadoCuentaBloqueando(
-                original.cuentaId(),
-                correccion.fecha().toLocalDate()
-        );
-        if (!estadoCuenta.estadoCliente().esOperativo()) {
-            throw new ClienteNoOperativoException(estadoCuenta.clienteId());
-        }
-        if (!estadoCuenta.estadoCuenta().esOperativa()) {
-            throw new CuentaNoOperativaException(original.cuentaId());
-        }
-
+                original.cuentaId(), original.fecha().toLocalDate());
         BigDecimal saldoRevertido = revertirSaldoOriginal(original, estadoCuenta.saldoActual());
-        BigDecimal extraccionesDiarias = estadoCuenta.extraccionesDiarias();
-        if (original.tipoMovimiento() == TipoMovimiento.RETIRO
-                && original.fecha().toLocalDate().equals(correccion.fecha().toLocalDate())) {
-            extraccionesDiarias = extraccionesDiarias.subtract(original.valor());
-        }
-        EstadoCuentaMovimiento estadoAjustado = new EstadoCuentaMovimiento(
-                estadoCuenta.clienteId(),
-                saldoRevertido,
-                extraccionesDiarias,
-                estadoCuenta.estadoCuenta(),
-                estadoCuenta.estadoCliente()
-        );
-        BigDecimal saldoCorregido = calcularSaldoNuevo(correccion, estadoAjustado);
-        movimientoPersistence.actualizarSaldoBloqueado(original.cuentaId(), saldoCorregido);
-
-        Movimiento creado = movimientoPersistence.revertirYGuardarCorreccion(movimientoId, correccion);
-        logger.info(
-                "Movimiento corregido: originalId={}, correccionId={}, cuentaId={}, tipo={}",
-                original.movimientoId(),
-                creado.movimientoId(),
-                creado.cuentaId(),
-                creado.tipoMovimiento()
-        );
-        return creado;
+        movimientoPersistence.actualizarSaldoBloqueado(original.cuentaId(), saldoRevertido);
+        return movimientoPersistence.actualizarEstado(movimientoId, EstadoTransaccionMovimiento.REVERSED);
     }
 
     @Override
     @Transactional
     public void eliminar(String movimientoId) {
         obtenerPorId(movimientoId);
-        movimientoPersistence.eliminarPorId(movimientoId);
+        throw new IllegalArgumentException("Los movimientos solo se pueden reversar; no se pueden eliminar.");
     }
 
     @Override
@@ -229,10 +208,6 @@ public class MovimientosService implements MovimientosUseCase {
             if (estadoCuenta.saldoActual().compareTo(movimiento.valor()) < 0) {
                 logger.warn("Movimiento rechazado por saldo insuficiente: cuentaId={}", movimiento.cuentaId());
                 throw new SaldoInsuficienteException(movimiento.cuentaId());
-            }
-            if (estadoCuenta.extraccionesDiarias().add(movimiento.valor()).compareTo(maximoRetiroDiario) > 0) {
-                logger.warn("Movimiento rechazado por límite diario excedido: cuentaId={}", movimiento.cuentaId());
-                throw new LimiteExtraccionDiarioExcedidoException(movimiento.cuentaId());
             }
             return estadoCuenta.saldoActual().subtract(movimiento.valor());
         }

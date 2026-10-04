@@ -2,16 +2,16 @@ package santacruz.jeremias.bancaExample.infrastructure.adapterIn;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence.ClienteJpaRepository;
 import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.ClienteEntity;
 import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.PersonaEntity;
+import santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence.ClienteJpaRepository;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -59,10 +59,12 @@ class CuentaEntityHttpIntegrationTest {
                         .build()
         );
 
-        assertThat(createResponse.statusCode()).isEqualTo(201);
-        String location = createResponse.headers().firstValue("Location").orElseThrow();
+        assertThat(createResponse.statusCode()).isEqualTo(200);
+        String cuentaId = tools.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(createResponse.body()).get("cuentaId").asText();
+        String location = uri("/cuentas/" + clienteEntity.getId() + "/" + cuentaId).toString();
         assertThat(createResponse.body()).contains("\"tipoCuenta\":\"AHORRO\"");
-        assertThat(createResponse.body()).contains("\"saldo\":1250.75");
+        assertThat(createResponse.body()).contains("\"saldo\":0");
 
         HttpResponse<String> readResponse = send(
                 httpClient,
@@ -86,7 +88,7 @@ class CuentaEntityHttpIntegrationTest {
 
         HttpResponse<String> listResponse = send(
                 httpClient,
-                HttpRequest.newBuilder(uri("/cuentas")).GET().build()
+                HttpRequest.newBuilder(uri("/cuentas/" + clienteEntity.getId())).GET().build()
         );
         assertThat(listResponse.statusCode()).isEqualTo(200);
         assertThat(listResponse.body()).contains("\"tipoCuenta\":\"CORRIENTE\"");
@@ -134,7 +136,7 @@ class CuentaEntityHttpIntegrationTest {
                   "clienteId": "%d",
                   "tipoCuenta": "%s",
                   "estado": "activa",
-                  "saldo": %s
+                  "saldoInicial": %s
                 }
                 """.formatted(clienteId, tipoCuenta, saldoInicial);
     }

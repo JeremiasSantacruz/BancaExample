@@ -92,6 +92,15 @@ public class MovimientoRepositoryAdapter implements MovimientoPersistencePort {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public Movimiento actualizarEstado(String movimientoId, EstadoTransaccionMovimiento estado) {
+        MovimientoEntity original = movimientoJpaRepository.findByIdForUpdate(parseId(movimientoId))
+                .orElseThrow(() -> new MovimientoNoEncontradoException(movimientoId));
+        original.actualizarEstado(estado);
+        return toDomain(movimientoJpaRepository.save(original));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
     public santacruz.jeremias.bancaExample.domain.model.Movimiento revertirYGuardarCorreccion(
             String movimientoId,
             santacruz.jeremias.bancaExample.domain.model.Movimiento correccion

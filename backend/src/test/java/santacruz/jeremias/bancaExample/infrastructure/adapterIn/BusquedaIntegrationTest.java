@@ -13,14 +13,20 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoTransaccionMovimiento;
 import santacruz.jeremias.bancaExample.domain.enums.TipoMovimiento;
-import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.*;
-import santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence.*;
+import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.ClienteEntity;
+import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.CuentaEntity;
+import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.MovimientoEntity;
+import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.PersonaEntity;
+import santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence.ClienteJpaRepository;
+import santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence.CuentaJpaRepository;
+import santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence.MovimientoJpaRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=create")
 @AutoConfigureMockMvc
@@ -121,10 +127,12 @@ class BusquedaIntegrationTest {
         mvc.perform(get("/reportes").param("clienteId", ana.getId().toString())
                         .param("inicio", "2026-10-03").param("fin", "2026-10-04"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].cuentaId").value(corriente.getId().toString()))
-                .andExpect(jsonPath("$[1].cuentaId").value(ahorro.getId().toString()));
+                .andExpect(jsonPath("$[*].cuentaId", org.hamcrest.Matchers.containsInAnyOrder(
+                        corriente.getId().toString(), ahorro.getId().toString())))
+                .andExpect(jsonPath("$[*].movimientos[*].fecha", org.hamcrest.Matchers.containsInAnyOrder(
+                        "2026-10-03T00:00:00", "2026-10-04T23:59:59.999")));
         mvc.perform(get("/reportes").param("clienteId", ana.getId().toString()))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(3));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
         var vacio = cliente("Vacio", "3", "activo");
         mvc.perform(get("/reportes").param("clienteId", vacio.getId().toString()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));

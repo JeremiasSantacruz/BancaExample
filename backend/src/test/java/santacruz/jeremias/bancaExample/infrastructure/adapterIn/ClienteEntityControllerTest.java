@@ -14,14 +14,9 @@ import santacruz.jeremias.bancaExample.domain.model.Persona;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -79,14 +74,14 @@ class ClienteEntityControllerTest {
 
     @Test
     void shouldListClientes() throws Exception {
-        when(clienteUseCase.obtenerTodos()).thenReturn(java.util.List.of(cliente()));
+        when(clienteUseCase.buscar(null, null, null)).thenReturn(java.util.List.of(cliente()));
 
         mockMvc.perform(get("/clientes"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].clienteId").value("1"))
                 .andExpect(jsonPath("$[0].nombre").value("John Doe"));
 
-        verify(clienteUseCase).obtenerTodos();
+        verify(clienteUseCase).buscar(null, null, null);
     }
 
     @Test
