@@ -1,5 +1,7 @@
 package santacruz.jeremias.bancaExample.application.usecase;
 
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import org.junit.jupiter.api.Test;
 import santacruz.jeremias.bancaExample.application.command.ClienteCommand;
 import santacruz.jeremias.bancaExample.application.port.out.ClientePersistencePort;
@@ -122,10 +124,12 @@ class ClienteEntityServiceTest {
 
     @Test
     void shouldListClientes() {
-        when(clientePersistence.buscar(null, null, null)).thenReturn(java.util.List.of(cliente("1", "123456")));
+        Paginacion paginacion = Paginacion.of(0, "10");
+        when(clientePersistence.buscar(null, null, null, null, paginacion))
+                .thenReturn(Pagina.of(java.util.List.of(cliente("1", "123456")), 0, 10, 1));
 
-        assertThat(service.buscar(null, null, null )).hasSize(1);
-        verify(clientePersistence).buscar(null, null, null);
+        assertThat(service.buscar(null, null, null, null, paginacion).content()).hasSize(1);
+        verify(clientePersistence).buscar(null, null, null, null, paginacion);
     }
 
     @Test

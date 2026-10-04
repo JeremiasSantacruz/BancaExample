@@ -3,6 +3,8 @@ package santacruz.jeremias.bancaExample.application.usecase;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import santacruz.jeremias.bancaExample.application.command.ClienteCommand;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.application.port.in.ClienteUseCase;
 import santacruz.jeremias.bancaExample.application.port.out.ClientePersistencePort;
 import santacruz.jeremias.bancaExample.application.port.out.CuentaPersistencePort;
@@ -40,9 +42,11 @@ public class ClienteService implements ClienteUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Cliente> buscar(String nombre, String identificacion, String estado) {
+    public Pagina<Cliente> buscar(
+            String nombre, String identificacion, String estado, String search, Paginacion paginacion
+    ) {
         return clientePersistence.buscar(FiltrosBusqueda.texto(nombre), FiltrosBusqueda.texto(identificacion),
-                FiltrosBusqueda.enumerado(estado, EstadoCliente.class));
+                FiltrosBusqueda.enumerado(estado, EstadoCliente.class), FiltrosBusqueda.texto(search), paginacion);
     }
 
     @Override

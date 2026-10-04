@@ -4,6 +4,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import santacruz.jeremias.bancaExample.application.command.CreateCuentaCommand;
 import santacruz.jeremias.bancaExample.application.command.CuentaCommand;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.application.port.in.CuentaUseCase;
 import santacruz.jeremias.bancaExample.domain.enums.TipoCuenta;
 import santacruz.jeremias.bancaExample.domain.model.Cuenta;
@@ -11,7 +13,6 @@ import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.CreateCuenta
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.CuentaRequest;
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.CuentaResponse;
 
-import java.util.List;
 import java.util.Locale;
 
 @RestController
@@ -30,15 +31,21 @@ public class CuentaController {
     }
 
     @GetMapping("/buscar")
-    public List<CuentaResponse> buscar(@RequestParam(required = false) String clienteId,
+    public Pagina<CuentaResponse> buscar(@RequestParam(required = false) String clienteId,
                                        @RequestParam(required = false) String tipoCuenta,
-                                       @RequestParam(required = false) String estado) {
-        return cuentaUseCase.buscar(clienteId, tipoCuenta, estado).stream().map(this::toResponse).toList();
+                                       @RequestParam(required = false) String estado,
+                                       @RequestParam(required = false) String search,
+                                       @RequestParam(required = false) Integer page,
+                                       @RequestParam(required = false) String size) {
+        return cuentaUseCase.buscar(clienteId, tipoCuenta, estado, search, Paginacion.of(page, size))
+                .map(this::toResponse);
     }
 
     @GetMapping("/{clienteId}")
-    public List<CuentaResponse> listar(@PathVariable String clienteId) {
-        return cuentaUseCase.obtenerTodas(clienteId).stream().map(this::toResponse).toList();
+    public Pagina<CuentaResponse> listar(@PathVariable String clienteId,
+                                         @RequestParam(required = false) Integer page,
+                                         @RequestParam(required = false) String size) {
+        return cuentaUseCase.obtenerTodas(clienteId, Paginacion.of(page, size)).map(this::toResponse);
     }
 
     @GetMapping("/{clienteId}/{cuentaId}")

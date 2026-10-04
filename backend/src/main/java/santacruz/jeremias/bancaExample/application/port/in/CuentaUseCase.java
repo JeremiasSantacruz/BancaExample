@@ -2,16 +2,16 @@ package santacruz.jeremias.bancaExample.application.port.in;
 
 import santacruz.jeremias.bancaExample.application.command.CreateCuentaCommand;
 import santacruz.jeremias.bancaExample.application.command.CuentaCommand;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.domain.model.Cuenta;
 
-import java.util.List;
-
 public interface CuentaUseCase {
-    List<Cuenta> buscar(String clienteId, String tipoCuenta, String estado);
+    Pagina<Cuenta> buscar(String clienteId, String tipoCuenta, String estado, String search, Paginacion paginacion);
 
     Cuenta crear(CreateCuentaCommand command);
 
-    List<Cuenta> obtenerTodas(String clienteId);
+    Pagina<Cuenta> obtenerTodas(String clienteId, Paginacion paginacion);
 
     Cuenta obtenerPorId(String cuentaId);
 

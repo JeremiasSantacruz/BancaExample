@@ -1,8 +1,11 @@
 package santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.application.port.out.MovimientoPersistencePort;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoCliente;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoCuenta;
@@ -18,11 +21,18 @@ import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.Movimient
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Repository
 @Transactional(readOnly = true)
 public class MovimientoRepositoryAdapter implements MovimientoPersistencePort {
+
+    /** Orden estable para poder cortar páginas sin repetir ni perder movimientos. */
+    private static final Sort ORDEN_POR_DEFECTO = Sort.by(
+            Sort.Order.desc("fecha"),
+            Sort.Order.desc("id")
+    );
 
     @Override
     public List<Movimiento> buscarPorCliente(String clienteId, LocalDate inicio, LocalDate fin) {
@@ -47,13 +57,23 @@ public class MovimientoRepositoryAdapter implements MovimientoPersistencePort {
     }
 
     @Override
-    public List<Movimiento> buscar(
-            String cuentaId, LocalDate inicio, LocalDate fin
+    public Pagina<Movimiento> buscar(
+            String cuentaId, LocalDate inicio, LocalDate fin, String search, Paginacion paginacion
     ) {
-        return movimientoJpaRepository.searchAll(cuentaId == null ? null : parseId(cuentaId),
+        return PaginacionSpringData.toPagina(
+                movimientoJpaRepository.searchAll(
+                        cuentaId == null ? null : parseId(cuentaId),
                         inicio == null ? null : inicio.atStartOfDay(),
-                        fin == null ? null : fin.plusDays(1).atStartOfDay())
-                .stream().map(this::toDomain).toList();
+                        fin == null ? null : fin.plusDays(1).atStartOfDay(),
+                        search,
+                        PaginacionSpringData.toIdOpcional(search),
+                        aTipoMovimiento(search),
+                        aEstadoMovimiento(search),
+                        PaginacionSpringData.toPageable(paginacion, ORDEN_POR_DEFECTO)
+                ),
+                paginacion,
+                this::toDomain
+        );
     }
 
     @Override
@@ -73,8 +93,15 @@ public class MovimientoRepositoryAdapter implements MovimientoPersistencePort {
     }
 
     @Override
-    public List<santacruz.jeremias.bancaExample.domain.model.Movimiento> listarTodos() {
-        return movimientoJpaRepository.findAll().stream().map(this::toDomain).toList();
+    public Pagina<santacruz.jeremias.bancaExample.domain.model.Movimiento> listarTodos(Paginacion paginacion) {
+        return PaginacionSpringData.toPagina(
+                movimientoJpaRepository.searchAll(
+                        null, null, null, null, null, null, null,
+                        PaginacionSpringData.toPageable(paginacion, ORDEN_POR_DEFECTO)
+                ),
+                paginacion,
+                this::toDomain
+        );
     }
 
     @Override
@@ -193,6 +220,32 @@ public class MovimientoRepositoryAdapter implements MovimientoPersistencePort {
             return Long.valueOf(id);
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException("El id debe ser numérico.", exception);
+        }
+    }
+
+    /** Interpreta el texto de búsqueda como tipo de movimiento, si coincide. */
+    private static TipoMovimiento aTipoMovimiento(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+
+        try {
+            return TipoMovimiento.valueOf(texto.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    /** Interpreta el texto de búsqueda como estado del movimiento, si coincide. */
+    private static EstadoTransaccionMovimiento aEstadoMovimiento(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+
+        try {
+            return EstadoTransaccionMovimiento.valueOf(texto.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            return null;
         }
     }
 

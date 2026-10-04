@@ -1,0 +1,26 @@
+<dialog
+  #dialog
+  (cancel)="cancelled.emit()"
+  aria-describedby="confirm-dialog-message"
+  aria-labelledby="confirm-dialog-title"
+  class="confirm-dialog"
+>
+  <h2 id="confirm-dialog-title">{{ title() }}</h2>
+
+  <p id="confirm-dialog-message">{{ message() }}</p>
+
+  <div class="dialog-actions">
+    <button (click)="cancelled.emit()" class="button button-quiet" type="button">
+      {{ cancelLabel() }}
+    </button>
+    <button
+      (click)="confirmed.emit()"
+      [class.button-danger]="tone() === 'danger'"
+      class="button"
+      type="button"
+      autofocus
+    >
+      {{ confirmLabel() }}
+    </button>
+  </div>
+</dialog>

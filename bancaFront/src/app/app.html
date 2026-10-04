@@ -1,0 +1,11 @@
+<div class="bank-app">
+  <app-sidebar [clienteCount]="clienteCount()" />
+
+  <div class="main-area">
+    <app-topbar [sectionTitle]="sectionTitle()" />
+
+    <main class="page-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

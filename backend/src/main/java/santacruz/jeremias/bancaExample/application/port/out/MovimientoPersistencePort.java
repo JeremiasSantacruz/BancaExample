@@ -1,5 +1,7 @@
 package santacruz.jeremias.bancaExample.application.port.out;
 
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.domain.model.EstadoCuentaMovimiento;
 import santacruz.jeremias.bancaExample.domain.model.Movimiento;
 
@@ -12,11 +14,11 @@ public interface MovimientoPersistencePort {
 
     List<Movimiento> buscarPorCliente(String clienteId, LocalDate inicio, LocalDate fin);
 
-    List<Movimiento> buscar(String cuentaId, java.time.LocalDate inicio, java.time.LocalDate fin);
+    Pagina<Movimiento> buscar(String cuentaId, java.time.LocalDate inicio, java.time.LocalDate fin, String search, Paginacion paginacion);
 
     Movimiento guardar(Movimiento movimiento);
 
-    List<Movimiento> listarTodos();
+    Pagina<Movimiento> listarTodos(Paginacion paginacion);
 
     Optional<Movimiento> buscarPorId(String movimientoId);
 

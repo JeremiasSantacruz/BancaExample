@@ -1,0 +1,164 @@
+<app-page-header
+  description="Alta, edición y baja de clientes del banco. Solo los clientes ACTIVO pueden operar."
+  title="Clientes"
+>
+  <button
+    (click)="openCreateForm()"
+    [disabled]="saving()"
+    class="button button-primary"
+    type="button"
+  >
+    <span aria-hidden="true">+</span> Nuevo cliente
+  </button>
+</app-page-header>
+
+<app-notification [notification]="error() ? { kind: 'error', message: error()! } : null" />
+
+<div class="summary-grid">
+  <article
+    app-summary-card
+    caption="Con los filtros aplicados"
+    icon="C"
+    label="Total clientes"
+    tone="blue"
+    [value]="totalClientes()"
+  ></article>
+
+  <article
+    app-summary-card
+    caption="Operativos"
+    icon="✓"
+    label="Clientes activos"
+    tone="green"
+    [value]="activeClientes()"
+  ></article>
+
+  <article
+    app-summary-card
+    caption="En el sistema"
+    icon="$"
+    label="Cuentas activas"
+    tone="amber"
+    [value]="activeCuentas()"
+  ></article>
+</div>
+
+<section class="data-card">
+  <app-search-filters
+    (filtersReset)="onFiltersReset()"
+    (filtersSearch)="onFilters($event)"
+    [fields]="filterFields"
+    [loading]="loading()"
+    [values]="filters()"
+  />
+
+  <app-table-toolbar
+    (searchTermChange)="onSearchTerm($event)"
+    [recordCount]="totalClientes()"
+    searchLabel="Buscar clientes"
+    searchPlaceholder="Buscar por nombre, identificación o teléfono"
+    title="Listado de clientes"
+    [loading]="loading()"
+    [searchTerm]="searchTerm()"
+  />
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>CLIENTE</th>
+          <th>IDENTIFICACIÓN</th>
+          <th>TELÉFONO</th>
+          <th>EDAD</th>
+          <th>ESTADO</th>
+          <th class="actions-heading">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (cliente of clientes(); track cliente.clienteId) {
+          <tr
+            (click)="!saving() && viewCuentas(cliente)"
+            [class.navigable-row]="!saving()"
+          >
+            <td>
+              <app-person-cell [name]="cliente.nombre" [subtitle]="cliente.direccion" />
+            </td>
+            <td class="mono">{{ cliente.identificacion }}</td>
+            <td>{{ cliente.telefono }}</td>
+            <td>{{ cliente.edad }} años</td>
+            <td>
+              <app-status-badge [estado]="cliente.estado" />
+            </td>
+            <td (click)="$event.stopPropagation()" class="row-actions">
+              <button
+                (click)="openEditForm(cliente)"
+                class="text-action"
+                [disabled]="saving()"
+                type="button"
+              >
+                Editar
+              </button>
+              <button
+                (click)="askDelete(cliente)"
+                class="text-action danger-action"
+                [disabled]="saving()"
+                type="button"
+              >
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td class="empty-state" colspan="6">
+              @if (loading()) {
+                Cargando clientes...
+              } @else {
+                No hay clientes para mostrar. Creá un cliente para comenzar.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination
+    (pageChange)="onPageChange($event)"
+    (sizeChange)="onSizeChange($event)"
+    [disabled]="loading()"
+    [page]="page()"
+    [range]="range()"
+    [size]="size()"
+    [totalElements]="totalClientes()"
+    [totalPages]="totalPages()"
+  />
+</section>
+
+@if (formOpen()) {
+  <app-cliente-form
+    (closed)="closeForm()"
+    (saved)="onSave($event)"
+    [busy]="saving()"
+    [cliente]="editing()"
+    [error]="formError()"
+  />
+}
+
+@if (deleting(); as cliente) {
+  <app-confirm-dialog
+    (cancelled)="cancelDelete()"
+    (confirmed)="confirmDelete()"
+    [message]="
+      'Se eliminará a ' +
+      cliente.nombre +
+      '. Sus cuentas pasan a INACTIVA y deja de poder operar.'
+    "
+    confirmLabel="Eliminar cliente"
+    title="Eliminar cliente"
+  />
+}
+
+@if (result(); as operacion) {
+  <app-operation-result (dismissed)="dismissResult()" [result]="operacion" />
+}

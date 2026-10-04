@@ -1,0 +1,55 @@
+.form-dialog {
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+  color: #253148;
+  box-shadow: 0 20px 60px #0d152545;
+}
+
+.form-dialog::backdrop {
+  background: #111b2dcc;
+}
+
+.dialog-header {
+  padding: 24px 26px 18px;
+  border-bottom: 1px solid #eef0f3;
+}
+
+h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.dialog-subtitle {
+  margin: 6px 0 0;
+  color: #8490a0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.dialog-body {
+  padding: 22px 26px;
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
+}
+
+.dialog-error {
+  margin: 0 26px 4px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 26px 22px;
+  border-top: 1px solid #eef0f3;
+}
+
+@media print {
+  .form-dialog {
+    display: none;
+  }
+}

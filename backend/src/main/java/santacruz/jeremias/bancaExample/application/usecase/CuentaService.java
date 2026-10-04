@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import santacruz.jeremias.bancaExample.application.command.CreateCuentaCommand;
 import santacruz.jeremias.bancaExample.application.command.CuentaCommand;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.application.port.in.CuentaUseCase;
 import santacruz.jeremias.bancaExample.application.port.out.CuentaPersistencePort;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoCuenta;
@@ -13,7 +15,6 @@ import santacruz.jeremias.bancaExample.domain.model.Cliente;
 import santacruz.jeremias.bancaExample.domain.model.Cuenta;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -43,16 +44,19 @@ public class CuentaService implements CuentaUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Cuenta> obtenerTodas(String clienteId) {
-        return cuentaPersistence.listarTodas(Long.parseLong(clienteId));
+    public Pagina<Cuenta> obtenerTodas(String clienteId, Paginacion paginacion) {
+        return cuentaPersistence.listarTodas(Long.parseLong(FiltrosBusqueda.id(clienteId)), paginacion);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Cuenta> buscar(String clienteId, String tipoCuenta, String estado) {
+    public Pagina<Cuenta> buscar(
+            String clienteId, String tipoCuenta, String estado, String search, Paginacion paginacion
+    ) {
         return cuentaPersistence.buscar(FiltrosBusqueda.id(clienteId),
                 FiltrosBusqueda.enumerado(tipoCuenta, TipoCuenta.class),
-                FiltrosBusqueda.enumerado(estado, EstadoCuenta.class));
+                FiltrosBusqueda.enumerado(estado, EstadoCuenta.class),
+                FiltrosBusqueda.texto(search), paginacion);
     }
 
 

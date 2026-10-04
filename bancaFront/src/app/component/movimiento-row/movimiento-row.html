@@ -1,0 +1,32 @@
+<td>{{ formatDate(movimiento().fecha) }}</td>
+
+<td class="mono">{{ movimiento().cuentaId }}</td>
+
+<td>
+  <span
+    [class.deposit-type]="movimiento().tipoMovimiento === 'DEPOSITO'"
+    class="movement-type"
+  >
+    {{ movimiento().tipoMovimiento }}
+  </span>
+</td>
+
+<td
+  [class.deposit-amount]="movimiento().tipoMovimiento === 'DEPOSITO'"
+  [class.withdraw-amount]="movimiento().tipoMovimiento === 'RETIRO'"
+  class="amount"
+>
+  {{ movimiento().tipoMovimiento === 'RETIRO' ? '−' : '+' }} {{ formatCurrency(movimiento().valor) }}
+</td>
+
+<td>
+  <app-status-badge [estado]="movimiento().estado" good="APPROVED" />
+</td>
+
+<td class="row-actions">
+  @if (canReverse()) {
+    <button (click)="reverse.emit(movimiento())" class="text-action" [disabled]="busy()" type="button">
+      Reversar
+    </button>
+  }
+</td>

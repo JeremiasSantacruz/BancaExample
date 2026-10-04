@@ -1,5 +1,7 @@
 package santacruz.jeremias.bancaExample.infrastructure.adapterIn;
 
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -74,14 +76,21 @@ class ClienteEntityControllerTest {
 
     @Test
     void shouldListClientes() throws Exception {
-        when(clienteUseCase.buscar(null, null, null)).thenReturn(java.util.List.of(cliente()));
+        when(clienteUseCase.buscar(null, null, null, null, Paginacion.porDefecto()))
+                .thenReturn(Pagina.of(java.util.List.of(cliente()), 0, 10, 1));
 
         mockMvc.perform(get("/clientes"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].clienteId").value("1"))
-                .andExpect(jsonPath("$[0].nombre").value("John Doe"));
+                .andExpect(jsonPath("$.content[0].clienteId").value("1"))
+                .andExpect(jsonPath("$.content[0].nombre").value("John Doe"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(true));
 
-        verify(clienteUseCase).buscar(null, null, null);
+        verify(clienteUseCase).buscar(null, null, null, null, Paginacion.porDefecto());
     }
 
     @Test

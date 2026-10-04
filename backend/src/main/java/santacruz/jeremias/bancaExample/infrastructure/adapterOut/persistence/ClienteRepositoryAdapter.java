@@ -1,6 +1,9 @@
 package santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.application.port.out.ClientePersistencePort;
 import santacruz.jeremias.bancaExample.domain.exception.ClienteNoEncontradoException;
 import santacruz.jeremias.bancaExample.domain.model.Cliente;
@@ -8,15 +11,31 @@ import santacruz.jeremias.bancaExample.domain.model.Persona;
 import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.ClienteEntity;
 import santacruz.jeremias.bancaExample.infrastructure.adapterOut.model.PersonaEntity;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
 @Repository
 public class ClienteRepositoryAdapter implements ClientePersistencePort {
+
+    /** Orden estable para poder cortar páginas sin repetir ni perder clientes. */
+    private static final Sort ORDEN_POR_DEFECTO = Sort.by(
+            Sort.Order.asc("personaEntity.nombre"),
+            Sort.Order.asc("id")
+    );
+
     @Override
-    public List<Cliente> buscar(String nombre, String identificacion, String estado) {
-        return clienteJpaRepository.searchAll(nombre, identificacion, estado).stream().map(this::toDomain).toList();
+    public Pagina<Cliente> buscar(
+            String nombre, String identificacion, String estado, String search, Paginacion paginacion
+    ) {
+        return PaginacionSpringData.toPagina(
+                clienteJpaRepository.searchAll(
+                        nombre, identificacion, estado, search,
+                        PaginacionSpringData.toIdOpcional(search),
+                        PaginacionSpringData.toPageable(paginacion, ORDEN_POR_DEFECTO)
+                ),
+                paginacion,
+                this::toDomain
+        );
     }
 
 

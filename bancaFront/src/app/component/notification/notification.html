@@ -1,0 +1,11 @@
+@if (notification(); as notice) {
+  <div
+    [attr.role]="notice.kind === 'error' ? 'alert' : 'status'"
+    [class.notice-error]="notice.kind === 'error'"
+    [class.notice-success]="notice.kind === 'success'"
+    class="notice"
+  >
+    <span aria-hidden="true">{{ notice.kind === 'error' ? '!' : '✓' }}</span>
+    {{ notice.message }}
+  </div>
+}

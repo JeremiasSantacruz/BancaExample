@@ -1,0 +1,116 @@
+<app-page-header
+  description="Historial de depósitos y retiros. Solo los movimientos aplicados mueven el saldo."
+  title="Movimientos"
+>
+  <button
+    (click)="openCreateForm()"
+    [disabled]="saving() || cuentasOperativas().length === 0"
+    class="button button-primary"
+    type="button"
+  >
+    <span aria-hidden="true">+</span> Nuevo movimiento
+  </button>
+</app-page-header>
+
+<app-notification [notification]="error() ? { kind: 'error', message: error()! } : null" />
+
+<div class="summary-grid">
+  <article
+    app-summary-card
+    caption="En el histórico"
+    icon="↕"
+    label="Total movimientos"
+    tone="blue"
+    [value]="totalMovimientos()"
+  ></article>
+
+  <article
+    app-summary-card
+    caption="Importe de la página"
+    icon="↓"
+    label="Depósitos aplicados"
+    tone="green"
+    [value]="formatCurrency(deposits())"
+  ></article>
+
+  <article
+    app-summary-card
+    caption="Importe de la página"
+    icon="↑"
+    label="Retiros aplicados"
+    tone="amber"
+    [value]="formatCurrency(withdrawals())"
+  ></article>
+</div>
+
+<section class="data-card">
+  <app-search-filters
+    (filtersReset)="onFiltersReset()"
+    (filtersSearch)="onFilters($event)"
+    [fields]="filterFields"
+    [loading]="loading()"
+    [values]="filters()"
+  />
+
+  <app-table-toolbar
+    (searchTermChange)="onSearchTerm($event)"
+    [recordCount]="totalMovimientos()"
+    searchLabel="Buscar movimientos"
+    searchPlaceholder="Buscar por id, tipo o estado"
+    title="Últimos movimientos"
+    [loading]="loading()"
+    [searchTerm]="searchTerm()"
+  />
+
+  <app-movimientos-table
+    (reverse)="askReverse($event)"
+    [busy]="saving()"
+    [canReverse]="true"
+    emptyMessage="No hay movimientos para mostrar. Registrá un depósito o retiro."
+    [movimientos]="movimientos()"
+  />
+
+  <footer class="table-footer">
+    <span>Neto aplicado de la página</span>
+    <strong>{{ formatCurrency(netAmount()) }}</strong>
+  </footer>
+
+  <app-pagination
+    (pageChange)="onPageChange($event)"
+    (sizeChange)="onSizeChange($event)"
+    [disabled]="loading()"
+    [page]="page()"
+    [range]="range()"
+    [size]="size()"
+    [totalElements]="totalMovimientos()"
+    [totalPages]="totalPages()"
+  />
+</section>
+
+@if (formOpen()) {
+  <app-movimiento-form
+    (closed)="closeForm()"
+    (saved)="onSave($event)"
+    [busy]="saving()"
+    [cuentas]="cuentasOperativas()"
+    [error]="formError()"
+  />
+}
+
+@if (reversing(); as movimiento) {
+  <app-confirm-dialog
+    (cancelled)="cancelReverse()"
+    (confirmed)="confirmReverse()"
+    [message]="
+      'El movimiento ' +
+      movimiento.movimientoId +
+      ' quedará como REVERSED y se generará una corrección con el mismo importe.'
+    "
+    confirmLabel="Reversar movimiento"
+    title="Reversar movimiento"
+  />
+}
+
+@if (result(); as operacion) {
+  <app-operation-result (dismissed)="dismissResult()" [result]="operacion" />
+}

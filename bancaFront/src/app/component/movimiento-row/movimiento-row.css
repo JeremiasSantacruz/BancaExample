@@ -1,0 +1,18 @@
+.withdraw-amount {
+  color: #a5342f;
+}
+
+.movement-type {
+  display: inline-block;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: #fff5e5;
+  color: #986d30;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.movement-type.deposit-type {
+  background: #e8f6ef;
+  color: #35845d;
+}

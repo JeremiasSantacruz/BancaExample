@@ -1,0 +1,43 @@
+<dialog
+  #dialog
+  (cancel)="closed.emit()"
+  aria-labelledby="form-dialog-title"
+  class="form-dialog"
+>
+  <header class="dialog-header">
+    <h2 id="form-dialog-title">{{ title() }}</h2>
+    @if (subtitle()) {
+      <p class="dialog-subtitle">{{ subtitle() }}</p>
+    }
+  </header>
+
+  <div class="dialog-body">
+    <ng-content />
+  </div>
+
+  @if (error()) {
+    <div class="notice notice-error dialog-error">
+      <span aria-hidden="true">!</span>
+      {{ error() }}
+    </div>
+  }
+
+  <footer class="dialog-actions">
+    <button (click)="closed.emit()" class="button button-quiet" [disabled]="busy()" type="button">
+      Cancelar
+    </button>
+    <!--
+      El botón vive fuera del <form> proyectado, así que lo asociamos con el
+      atributo `form` nativo. Evita además que este diálogo sea el
+      ControlContainer de los formControlName del hijo.
+    -->
+    <button
+      class="button button-primary"
+      [attr.form]="formId()"
+      [disabled]="busy()"
+      type="submit"
+    >
+      {{ busy() ? 'Guardando...' : submitLabel() }}
+    </button>
+  </footer>
+</dialog>

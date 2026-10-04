@@ -1,5 +1,7 @@
 package santacruz.jeremias.bancaExample.infrastructure.adapterIn;
 
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -57,17 +59,19 @@ class CuentaEntityControllerTest {
 
     @Test
     void shouldListAndGetCuentas() throws Exception {
-        when(cuentaUseCase.obtenerTodas("7")).thenReturn(List.of(cuenta()));
+        when(cuentaUseCase.obtenerTodas("7", Paginacion.porDefecto()))
+                .thenReturn(Pagina.of(List.of(cuenta()), 0, 10, 1));
         when(cuentaUseCase.obtenerPorId("42")).thenReturn(cuenta());
 
         mockMvc.perform(get("/cuentas/7"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].tipoCuenta").value("AHORRO"));
+                .andExpect(jsonPath("$.content[0].tipoCuenta").value("AHORRO"))
+                .andExpect(jsonPath("$.totalElements").value(1));
         mockMvc.perform(get("/cuentas/7/42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cuentaId").value("42"));
 
-        verify(cuentaUseCase).obtenerTodas("7");
+        verify(cuentaUseCase).obtenerTodas("7", Paginacion.porDefecto());
         verify(cuentaUseCase).obtenerPorId("42");
     }
 

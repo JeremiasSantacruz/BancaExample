@@ -1,0 +1,52 @@
+:host {
+  display: block;
+  background: #ffffff;
+  border: 1px solid #eceef1;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.card-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8490a0;
+}
+
+.card-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.card-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1d293c;
+  line-height: 1.2;
+}
+
+.card-caption {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* Variaciones de Tono */
+:host(.tone-blue) .card-icon { background: #e9effb; color: #264e92; }
+:host(.tone-green) .card-icon { background: #dcfce7; color: #15803d; }
+:host(.tone-amber) .card-icon { background: #fef3c7; color: #b45309; }
+:host(.tone-red) .card-icon { background: #fee2e2; color: #b91c1c; }

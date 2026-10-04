@@ -1,0 +1,57 @@
+<div class="pagination-bar">
+  <span class="pagination-summary">
+    @if (totalElements() > 0) {
+      Mostrando {{ range().desde }}-{{ range().hasta }} de {{ totalElements() }}
+    } @else {
+      Sin resultados
+    }
+  </span>
+
+  <nav aria-label="Paginación">
+    <button
+      (click)="anterior()"
+      [disabled]="disabled() || page() === 0"
+      aria-label="Página anterior"
+      type="button"
+    >
+      ‹
+    </button>
+
+    @for (numero of paginas(); track numero; let indice = $index) {
+      @if (indice > 0 && numero - paginas()[indice - 1] > 1) {
+        <span class="pagination-gap" aria-hidden="true">…</span>
+      }
+      <button
+        (click)="irA(numero)"
+        [attr.aria-current]="numero === page() ? 'page' : null"
+        [class.active]="numero === page()"
+        [disabled]="disabled()"
+        type="button"
+      >
+        {{ numero + 1 }}
+      </button>
+    }
+
+    <button
+      (click)="siguiente()"
+      [disabled]="disabled() || page() + 1 >= totalPages()"
+      aria-label="Página siguiente"
+      type="button"
+    >
+      ›
+    </button>
+  </nav>
+
+  <label class="pagination-size">
+    <span>Por página</span>
+    <select
+      (change)="cambiarTamanio($any($event.target).value)"
+      aria-label="Elementos por página"
+      [disabled]="disabled()"
+    >
+      @for (tamanio of tamanios; track tamanio) {
+        <option [selected]="tamanio === size()" [value]="tamanio">{{ tamanio }}</option>
+      }
+    </select>
+  </label>
+</div>

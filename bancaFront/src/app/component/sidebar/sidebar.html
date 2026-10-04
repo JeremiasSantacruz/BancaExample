@@ -1,0 +1,36 @@
+<aside class="sidebar">
+  <a class="brand" routerLink="/clientes">
+    <span class="brand-mark">B</span>
+    <span class="brand-name">
+      BANCO
+      <span class="brand-caption">GESTIÓN FINANCIERA</span>
+    </span>
+  </a>
+
+  <p class="side-label">MENÚ PRINCIPAL</p>
+
+  <nav aria-label="Navegación principal">
+    @for (item of navigation; track item.id) {
+      <a
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        class="nav-item"
+        [routerLinkActiveOptions]="{ exact: false }"
+      >
+        <span class="nav-marker">{{ item.marker }}</span>
+        <span class="nav-label">{{ item.label }}</span>
+        @if (item.showsClienteCount) {
+          <span class="nav-count">{{ clienteCount() }}</span>
+        }
+      </a>
+    }
+  </nav>
+
+  <div class="sidebar-bottom">
+    <span class="online-indicator" aria-hidden="true"></span>
+    <div>
+      <strong>Panel administrativo</strong>
+      <span>Conectado al sistema</span>
+    </div>
+  </div>
+</aside>

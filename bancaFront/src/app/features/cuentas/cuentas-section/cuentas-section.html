@@ -1,0 +1,182 @@
+<app-page-header
+  description="Cuentas registradas por cliente. Solo las cuentas ACTIVA permiten mover saldo."
+  title="Cuentas"
+>
+  <button
+    (click)="openCreateForm()"
+    [disabled]="saving() || clientesOperativos().length === 0"
+    class="button button-primary"
+    type="button"
+  >
+    <span aria-hidden="true">+</span> Nueva cuenta
+  </button>
+</app-page-header>
+
+<app-notification [notification]="error() ? { kind: 'error', message: error()! } : null" />
+
+<div class="summary-grid">
+  <article
+    app-summary-card
+    caption="Con los filtros aplicados"
+    icon="$"
+    label="Total cuentas"
+    tone="blue"
+    [value]="totalCuentas()"
+  ></article>
+
+  <article
+    app-summary-card
+    caption="En el sistema"
+    icon="✓"
+    label="Cuentas activas"
+    tone="green"
+    [value]="activeCuentas()"
+  ></article>
+
+  <article
+    app-summary-card
+    caption="Todas las cuentas"
+    icon="∑"
+    label="Saldo total"
+    tone="amber"
+    [value]="formatCurrency(totalSaldo())"
+  ></article>
+</div>
+
+<section class="data-card">
+  <app-search-filters
+    (filtersReset)="onFiltersReset()"
+    (filtersSearch)="onFilters($event)"
+    [fields]="filterFields"
+    [loading]="loading()"
+    [values]="filters()"
+  />
+
+  <app-table-toolbar
+    (searchTermChange)="onSearchTerm($event)"
+    [recordCount]="totalCuentas()"
+    searchLabel="Buscar cuentas"
+    searchPlaceholder="Buscar por número de cuenta o tipo"
+    title="Listado de cuentas"
+    [loading]="loading()"
+    [searchTerm]="searchTerm()"
+  >
+    <select
+      toolbarExtra
+      (ngModelChange)="onClienteFilter($event)"
+      [ngModel]="clienteFilter()"
+      aria-label="Filtrar por titular"
+      class="filter-select"
+    >
+      <option value="">Todos los clientes</option>
+      @for (cliente of clientes(); track cliente.clienteId) {
+        <option [value]="cliente.clienteId">{{ cliente.nombre }}</option>
+      }
+    </select>
+  </app-table-toolbar>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>NÚMERO DE CUENTA</th>
+          <th>CLIENTE</th>
+          <th>TIPO</th>
+          <th>SALDO</th>
+          <th>ESTADO</th>
+          <th class="actions-heading">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (cuenta of cuentas(); track cuenta.cuentaId) {
+          <tr (click)="!saving() && viewMovimientos(cuenta)" [class.navigable-row]="!saving()">
+            <td class="mono">
+              <button
+                (click)="$event.stopPropagation(); viewMovimientos(cuenta)"
+                [attr.aria-label]="'Ver movimientos de la cuenta ' + cuenta.cuentaId"
+                class="record-link"
+                type="button"
+              >
+                {{ cuenta.cuentaId }}
+              </button>
+            </td>
+            <td>
+              <app-person-cell [name]="customerName(cuenta.clienteId)" [subtitle]="cuenta.clienteId" />
+            </td>
+            <td>{{ cuenta.tipoCuenta }}</td>
+            <td class="amount">{{ formatCurrency(cuenta.saldo) }}</td>
+            <td>
+              <app-status-badge [estado]="cuenta.estado" good="ACTIVA" />
+            </td>
+            <td (click)="$event.stopPropagation()" class="row-actions">
+              <button
+                (click)="openEditForm(cuenta)"
+                class="text-action"
+                [disabled]="saving()"
+                type="button"
+              >
+                Editar
+              </button>
+              <button
+                (click)="askClose(cuenta)"
+                class="text-action danger-action"
+                [disabled]="saving()"
+                type="button"
+              >
+                Cerrar
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td class="empty-state" colspan="6">
+              @if (loading()) {
+                Cargando cuentas...
+              } @else {
+                No hay cuentas para mostrar. Registrá una cuenta nueva.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination
+    (pageChange)="onPageChange($event)"
+    (sizeChange)="onSizeChange($event)"
+    [disabled]="loading()"
+    [page]="page()"
+    [range]="range()"
+    [size]="size()"
+    [totalElements]="totalCuentas()"
+    [totalPages]="totalPages()"
+  />
+</section>
+
+@if (formOpen()) {
+  <app-cuenta-form
+    (closed)="closeForm()"
+    (saved)="onSave($event)"
+    [busy]="saving()"
+    [clientes]="clientesOperativos()"
+    [cuenta]="editing()"
+    [error]="formError()"
+  />
+}
+
+@if (closing(); as cuenta) {
+  <app-confirm-dialog
+    (cancelled)="cancelClose()"
+    (confirmed)="confirmClose()"
+    [message]="
+      'La cuenta ' + cuenta.cuentaId + ' pasará a estado CERRADA y dejará de permitir movimientos.'
+    "
+    confirmLabel="Cerrar cuenta"
+    title="Cerrar cuenta"
+  />
+}
+
+@if (result(); as operacion) {
+  <app-operation-result (dismissed)="dismissResult()" [result]="operacion" />
+}

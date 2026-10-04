@@ -52,14 +52,17 @@ class BusquedaIntegrationTest {
     void combinesClientFiltersAndSupportsPartialCaseInsensitiveNames() throws Exception {
         cliente("Ana Perez", "123456", "activo");
         cliente("Ana Lopez", "987654", "bloqueado");
-        mvc.perform(get("/clientes/buscar").param("nombre", "  ana  ")
+        mvc.perform(get("/clientes").param("nombre", "  ana  ")
                         .param("identificacion", "234").param("estado", "activo"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].nombre").value("Ana Perez"));
-        mvc.perform(get("/clientes/buscar").param("nombre", "missing"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
-        mvc.perform(get("/clientes/buscar"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].nombre").value("Ana Perez"));
+        mvc.perform(get("/clientes").param("nombre", "missing"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(0));
+        mvc.perform(get("/clientes"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalPages").value(1));
     }
 
     @Test
@@ -72,9 +75,11 @@ class BusquedaIntegrationTest {
         cuenta(juan, "AHORRO", "activa");
         mvc.perform(get("/cuentas/buscar").param("clienteId", ana.getId().toString())
                         .param("tipoCuenta", "ahorro").param("estado", "activa"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.totalElements").value(1));
         mvc.perform(get("/cuentas/buscar"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(4));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(4))
+                .andExpect(jsonPath("$.totalElements").value(4));
         mvc.perform(get("/cuentas/buscar").param("clienteId", "bad"))
                 .andExpect(status().isBadRequest());
         mvc.perform(get("/cuentas/buscar").param("tipoCuenta", "bad"))
@@ -93,15 +98,16 @@ class BusquedaIntegrationTest {
         movimiento(otra, "2026-10-03T12:00:00");
         mvc.perform(get("/movimientos/buscar").param("cuentaId", cuenta.getId().toString())
                         .param("inicio", "2026-10-03").param("fin", "2026-10-04"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.totalElements").value(2));
         mvc.perform(get("/movimientos/buscar").param("cuentaId", cuenta.getId().toString()))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(4));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(4));
         mvc.perform(get("/movimientos/buscar"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(5));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(5));
         mvc.perform(get("/movimientos/buscar").param("fin", "2026-10-02"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1));
         mvc.perform(get("/movimientos/buscar").param("inicio", "2026-10-05"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1));
     }
 
     @Test
@@ -126,16 +132,18 @@ class BusquedaIntegrationTest {
         movimiento(cuenta(juan, "AHORRO", "activa"), "2026-10-03T12:00:00");
         mvc.perform(get("/reportes").param("clienteId", ana.getId().toString())
                         .param("inicio", "2026-10-03").param("fin", "2026-10-04"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[*].cuentaId", org.hamcrest.Matchers.containsInAnyOrder(
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.content[*].cuentaId", org.hamcrest.Matchers.containsInAnyOrder(
                         corriente.getId().toString(), ahorro.getId().toString())))
-                .andExpect(jsonPath("$[*].movimientos[*].fecha", org.hamcrest.Matchers.containsInAnyOrder(
+                .andExpect(jsonPath("$.content[*].movimientos[*].fecha", org.hamcrest.Matchers.containsInAnyOrder(
                         "2026-10-03T00:00:00", "2026-10-04T23:59:59.999")));
         mvc.perform(get("/reportes").param("clienteId", ana.getId().toString()))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(2));
         var vacio = cliente("Vacio", "3", "activo");
         mvc.perform(get("/reportes").param("clienteId", vacio.getId().toString()))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(0))
+                .andExpect(jsonPath("$.totalElements").value(0));
     }
 
     @Test
@@ -153,6 +161,97 @@ class BusquedaIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void splitsEveryListIntoPagesAndRejectsInvalidPagination() throws Exception {
+        var ana = cliente("Ana", "1", "activo");
+        var juan = cliente("Juan", "2", "activo");
+        var primera = cuenta(ana, "AHORRO", "activa");
+        var segunda = cuenta(ana, "CORRIENTE", "activa");
+        var tercera = cuenta(juan, "AHORRO", "activa");
+        movimiento(primera, "2026-10-03T10:00:00");
+        movimiento(segunda, "2026-10-03T11:00:00");
+        movimiento(tercera, "2026-10-03T12:00:00");
+
+        mvc.perform(get("/cuentas/buscar").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(false));
+        mvc.perform(get("/cuentas/buscar").param("size", "2").param("page", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.first").value(false))
+                .andExpect(jsonPath("$.last").value(true));
+
+        mvc.perform(get("/cuentas/buscar").param("size", "all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(3))
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(1));
+
+        mvc.perform(get("/movimientos").param("size", "1").param("page", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(3));
+
+        mvc.perform(get("/reportes").param("clienteId", ana.getId().toString()).param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].cuentaId").value(primera.getId().toString()))
+                .andExpect(jsonPath("$.content[0].movimientos.length()").value(1))
+                .andExpect(jsonPath("$.totalElements").value(2));
+        mvc.perform(get("/reportes").param("clienteId", ana.getId().toString())
+                        .param("size", "1").param("page", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].cuentaId").value(segunda.getId().toString()));
+
+        for (String[] params : new String[][]{
+                {"page", "-1"}, {"size", "0"}, {"size", "101"}, {"size", "muchos"}}) {
+            mvc.perform(get("/cuentas/buscar").param(params[0], params[1]))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    void filtersListingsWithTheSearchText() throws Exception {
+        var ana = cliente("Ana", "1", "activo");
+        cliente("Juan", "2", "activo");
+        var ahorro = cuenta(ana, "AHORRO", "activa");
+        var corriente = cuenta(ana, "CORRIENTE", "cerrada");
+        movimiento(ahorro, "2026-10-03T10:00:00", TipoMovimiento.DEPOSITO);
+        movimiento(corriente, "2026-10-03T11:00:00", TipoMovimiento.RETIRO);
+
+        mvc.perform(get("/clientes").param("search", "jua"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].nombre").value("Juan"));
+
+        mvc.perform(get("/cuentas/buscar").param("search", "ahorro"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].cuentaId").value(ahorro.getId().toString()));
+        mvc.perform(get("/cuentas/buscar").param("search", "cerrada"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].cuentaId").value(corriente.getId().toString()));
+        mvc.perform(get("/cuentas/buscar").param("search", ahorro.getId().toString()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].cuentaId").value(ahorro.getId().toString()));
+        mvc.perform(get("/cuentas/buscar").param("search", "juan"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(0));
+
+        mvc.perform(get("/movimientos/buscar").param("search", "retiro"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].tipoMovimiento").value("RETIRO"));
+        mvc.perform(get("/movimientos/buscar").param("search", "deposito"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].tipoMovimiento").value("DEPOSITO"));
+        mvc.perform(get("/movimientos/buscar").param("search", corriente.getId().toString()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].cuentaId").value(corriente.getId().toString()));
+    }
+
     private ClienteEntity cliente(String nombre, String identificacion, String estado) {
         return clientes.saveAndFlush(new ClienteEntity(
                 new PersonaEntity(nombre, "F", 30L, identificacion, "Calle 1", "123"), "clave", estado));
@@ -163,7 +262,11 @@ class BusquedaIntegrationTest {
     }
 
     private void movimiento(CuentaEntity cuenta, String fecha) {
+        movimiento(cuenta, fecha, TipoMovimiento.DEPOSITO);
+    }
+
+    private void movimiento(CuentaEntity cuenta, String fecha, TipoMovimiento tipo) {
         movimientos.saveAndFlush(new MovimientoEntity(cuenta, LocalDateTime.parse(fecha),
-                TipoMovimiento.DEPOSITO, BigDecimal.TEN, EstadoTransaccionMovimiento.APPROVED));
+                tipo, BigDecimal.TEN, EstadoTransaccionMovimiento.APPROVED));
     }
 }

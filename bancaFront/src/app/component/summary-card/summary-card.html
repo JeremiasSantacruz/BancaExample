@@ -1,0 +1,12 @@
+<div class="card-body">
+  <div class="card-header">
+    <span class="card-label">{{ label() }}</span>
+    @if (icon()) {
+      <span class="card-icon">{{ icon() }}</span>
+    }
+  </div>
+  <div class="card-value">{{ value() }}</div>
+  @if (caption()) {
+    <span class="card-caption">{{ caption() }}</span>
+  }
+</div>

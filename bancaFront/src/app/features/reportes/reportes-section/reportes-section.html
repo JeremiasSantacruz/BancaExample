@@ -1,0 +1,175 @@
+<app-page-header
+  description="Consultá los movimientos de un cliente en un rango de fechas y exportalos a PDF."
+  title="Reportes de movimientos"
+/>
+
+<app-notification [notification]="error() ? { kind: 'error', message: error()! } : null" />
+
+<section class="data-card report-panel">
+  <div class="filter-grid">
+    <div class="filter-field">
+      <label for="reporte-cliente">Cliente</label>
+      <select
+        id="reporte-cliente"
+        (ngModelChange)="clienteId.set($event)"
+        [ngModel]="clienteId()"
+        name="clienteId"
+      >
+        <option disabled value="">Selecciona un cliente</option>
+        @for (cliente of clientes(); track cliente.clienteId) {
+          <option [value]="cliente.clienteId">
+            {{ cliente.nombre }} ({{ cliente.identificacion }})
+          </option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-field">
+      <label for="reporte-desde">Desde</label>
+      <input
+        id="reporte-desde"
+        (ngModelChange)="desde.set($event)"
+        [ngModel]="desde()"
+        name="desde"
+        type="date"
+      />
+    </div>
+
+    <div class="filter-field">
+      <label for="reporte-hasta">Hasta</label>
+      <input
+        id="reporte-hasta"
+        (ngModelChange)="hasta.set($event)"
+        [ngModel]="hasta()"
+        name="hasta"
+        type="date"
+      />
+    </div>
+  </div>
+
+  @if (rangoInvertido()) {
+    <div class="notice notice-error">
+      <span aria-hidden="true">!</span>
+      La fecha inicial no puede ser posterior a la fecha final.
+    </div>
+  }
+
+  <div class="filter-actions">
+    <button (click)="onClear()" class="button button-quiet" type="button">Limpiar</button>
+    <button
+      (click)="onGenerate()"
+      class="button button-primary"
+      [disabled]="loading() || !clienteId() || rangoInvertido()"
+      type="button"
+    >
+      {{ loading() ? 'Consultando...' : 'Generar reporte' }}
+    </button>
+  </div>
+</section>
+
+@if (hayResultados()) {
+  <div class="summary-grid">
+    <article
+      app-summary-card
+      caption="Del cliente consultado"
+      icon="$"
+      label="Cuentas"
+      tone="blue"
+      [value]="totalCuentas()"
+    ></article>
+
+    <article
+      app-summary-card
+      caption="Importe de la página"
+      icon="↓"
+      label="Depósitos"
+      tone="green"
+      [value]="formatCurrency(totalDepositos())"
+    ></article>
+
+    <article
+      app-summary-card
+      caption="Importe de la página"
+      icon="↑"
+      label="Retiros"
+      tone="amber"
+      [value]="formatCurrency(totalRetiros())"
+    ></article>
+
+    <article
+      app-summary-card
+      caption="Movimientos de la página"
+      icon="↕"
+      label="Movimientos"
+      tone="blue"
+      [value]="totalMovimientos()"
+    ></article>
+  </div>
+
+  <section class="data-card report-header-card">
+    <header class="report-header">
+      <div>
+        <h2>Movimientos de {{ clienteNombre() }}</h2>
+        <span class="muted">
+          {{ range().desde }}-{{ range().hasta }} de {{ totalCuentas() }} cuentas · entre
+          {{ desde() }} y {{ hasta() }}
+        </span>
+      </div>
+      <button (click)="print()" class="button button-quiet screen-only" type="button">
+        Descargar PDF
+      </button>
+    </header>
+  </section>
+
+  @for (reporte of reportes(); track reporte.cuentaId; let indice = $index) {
+    <section class="data-card account-block">
+      <header class="account-block-header">
+        <span class="account-index" aria-hidden="true">{{ indice + 1 }}</span>
+        <div class="account-titles">
+          <h3>
+            <span class="mono">{{ reporte.cuentaId }}</span>
+            <span class="account-type">{{ reporte.tipoCuenta }}</span>
+          </h3>
+          <span class="muted">
+            {{ movimientosDe(reporte).length }} movimientos · saldo
+            {{ formatCurrency(reporte.saldo) }}
+          </span>
+        </div>
+        <dl class="account-totals">
+          <div>
+            <dt>Depósitos</dt>
+            <dd class="positive">{{ formatCurrency(depositosDe(reporte)) }}</dd>
+          </div>
+          <div>
+            <dt>Retiros</dt>
+            <dd class="negative">{{ formatCurrency(retirosDe(reporte)) }}</dd>
+          </div>
+        </dl>
+      </header>
+
+      <app-movimientos-table
+        emptyMessage="Esta cuenta no tiene movimientos en el rango."
+        [movimientos]="movimientosDe(reporte)"
+      />
+    </section>
+  }
+
+  <section class="data-card pagination-card">
+    <app-pagination
+      (pageChange)="onPageChange($event)"
+      (sizeChange)="onSizeChange($event)"
+      [disabled]="loading()"
+      [page]="page()"
+      [range]="range()"
+      [size]="size()"
+      [totalElements]="totalCuentas()"
+      [totalPages]="totalPages()"
+    />
+  </section>
+} @else if (sinResultados()) {
+  <section class="data-card">
+    <p class="empty-state">
+      No hay movimientos para {{ clienteNombre() }} en el rango seleccionado.
+    </p>
+  </section>
+}

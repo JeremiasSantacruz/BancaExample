@@ -1,0 +1,21 @@
+<dialog
+  #dialog
+  (cancel)="dismissed.emit()"
+  aria-describedby="operation-result-message"
+  aria-labelledby="operation-result-title"
+  class="result-dialog"
+>
+  <div [class.result-error]="result().kind === 'error'" class="result-icon" aria-hidden="true">
+    {{ result().kind === 'success' ? '✓' : '!' }}
+  </div>
+
+  <h2 id="operation-result-title">
+    {{ result().kind === 'success' ? 'Operación correcta' : 'No se pudo completar' }}
+  </h2>
+
+  <p id="operation-result-message">{{ result().message }}</p>
+
+  <button (click)="dismissed.emit()" class="button button-primary" type="button" autofocus>
+    {{ result().kind === 'success' ? 'Aceptar' : 'Entendido' }}
+  </button>
+</dialog>

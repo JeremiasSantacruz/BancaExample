@@ -2,6 +2,9 @@ package santacruz.jeremias.bancaExample.application.usecase;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
+import santacruz.jeremias.bancaExample.application.dto.ReporteCuenta;
 import santacruz.jeremias.bancaExample.application.port.in.ReporteUseCase;
 import santacruz.jeremias.bancaExample.application.port.out.ClientePersistencePort;
 import santacruz.jeremias.bancaExample.application.port.out.CuentaPersistencePort;
@@ -30,19 +33,30 @@ public class ReporteService implements ReporteUseCase {
     }
 
     @Override
-    public Map<Cuenta, List<Movimiento>> generar(String clienteId, LocalDate inicio, LocalDate fin) {
+    public Pagina<ReporteCuenta> generar(
+            String clienteId, LocalDate inicio, LocalDate fin, Paginacion paginacion
+    ) {
         String id = FiltrosBusqueda.id(clienteId);
         if (inicio != null && fin != null && inicio.isAfter(fin)) {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin.");
         }
         clientes.buscarPorId(id).orElseThrow(() -> new ClienteNoEncontradoException(id));
-        Map<String, List<Movimiento>> movimientosAgrupados = movimientos.buscarPorCliente(id, inicio, fin).stream().collect(Collectors.groupingBy(Movimiento::cuentaId));
-        List<Cuenta> cuentas = cuentaPersistencePort.buscar(clienteId, null, null);
-        Map<Cuenta, List<Movimiento>> movimientosAgrupadosPorCuenta = new java.util.LinkedHashMap<>();
-        for (Cuenta cuenta : cuentas) {
-            movimientosAgrupadosPorCuenta.put(cuenta,
-                    movimientosAgrupados.getOrDefault(cuenta.cuentaId(), List.of()));
+
+        Pagina<Cuenta> cuentas = cuentaPersistencePort.buscar(
+                id, null, null, null, paginacion
+        );
+
+        if (cuentas.content().isEmpty()) {
+            return cuentas.map(cuenta -> new ReporteCuenta(cuenta, List.<Movimiento>of()));
         }
-        return movimientosAgrupadosPorCuenta;
+
+        Map<String, List<Movimiento>> movimientosPorCuenta = movimientos.buscarPorCliente(id, inicio, fin)
+                .stream()
+                .collect(Collectors.groupingBy(Movimiento::cuentaId));
+
+        return cuentas.map(cuenta -> new ReporteCuenta(
+                cuenta,
+                movimientosPorCuenta.getOrDefault(cuenta.cuentaId(), List.of())
+        ));
     }
 }

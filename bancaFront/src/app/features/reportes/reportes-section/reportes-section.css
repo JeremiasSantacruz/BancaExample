@@ -1,0 +1,200 @@
+:host {
+  display: block;
+}
+
+.report-panel {
+  padding: 22px;
+  margin-bottom: 22px;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.filter-field {
+  display: grid;
+  gap: 6px;
+}
+
+.filter-field label {
+  color: #8490a0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.filter-field input,
+.filter-field select {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #dcdfe4;
+  border-radius: 6px;
+  background: #fff;
+  color: #1d293c;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease-in-out;
+}
+
+.filter-field input:focus,
+.filter-field select:focus {
+  border-color: #264e92;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid #f2f4f7;
+}
+
+.report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #eceef1;
+}
+
+.report-header h2 {
+  margin: 0 0 4px;
+  color: #1d293c;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.muted {
+  color: #9aa3af;
+  font-size: 10px;
+}
+
+.report-header-card,
+.pagination-card {
+  margin-bottom: 16px;
+}
+
+.account-block {
+  margin-bottom: 16px;
+}
+
+.account-block-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eceef1;
+}
+
+.account-index {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #eef2fb;
+  color: #264e92;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.account-titles {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.account-titles h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #1d293c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.account-type {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f2f4f7;
+  color: #596579;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.account-totals {
+  display: flex;
+  gap: 22px;
+  margin: 0 0 0 auto;
+}
+
+.account-totals div {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+
+.account-totals dt {
+  color: #9aa3af;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.account-totals dd {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.account-totals .positive {
+  color: #1b7f4d;
+}
+
+.account-totals .negative {
+  color: #b42318;
+}
+
+@media print {
+  .report-header,
+  .account-block-header {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .account-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+@media (max-width: 700px) {
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-actions {
+    flex-direction: column-reverse;
+  }
+
+  .account-block-header {
+    flex-wrap: wrap;
+  }
+
+  .account-totals {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .account-totals div {
+    text-align: left;
+  }
+}

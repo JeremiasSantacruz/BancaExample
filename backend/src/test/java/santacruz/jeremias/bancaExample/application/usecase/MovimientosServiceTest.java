@@ -1,5 +1,7 @@
 package santacruz.jeremias.bancaExample.application.usecase;
 
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import org.junit.jupiter.api.Test;
 import santacruz.jeremias.bancaExample.application.command.MovimientoCommand;
 import santacruz.jeremias.bancaExample.application.port.in.CalcularSaldoUseCase;
@@ -94,10 +96,13 @@ class MovimientosServiceTest {
 
     @Test
     void shouldReturnAllMovimientos() {
-        when(persistence.listarTodos()).thenReturn(List.of(movimiento("42"), movimiento("43")));
+        Paginacion paginacion = Paginacion.of(0, "10");
+        when(persistence.listarTodos(paginacion))
+                .thenReturn(Pagina.of(List.of(movimiento("42"), movimiento("43")), 0, 10, 2));
 
-        assertThat(service.obtenerTodos()).extracting(Movimiento::movimientoId).containsExactly("42", "43");
-        verify(persistence).listarTodos();
+        assertThat(service.obtenerTodos(paginacion).content())
+                .extracting(Movimiento::movimientoId).containsExactly("42", "43");
+        verify(persistence).listarTodos(paginacion);
     }
 
     @Test

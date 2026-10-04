@@ -1,0 +1,41 @@
+<form (ngSubmit)="onSubmit()" class="filters-form">
+  <div class="filters-grid">
+    @for (field of fields(); track field.key) {
+      <div class="filter-field">
+        <label [attr.for]="'filter-' + field.key">{{ field.label }}</label>
+
+        @if (field.options?.length) {
+          <select
+            [id]="'filter-' + field.key"
+            [name]="field.key"
+            [ngModel]="formValues()[field.key] || ''"
+            (ngModelChange)="updateFieldValue(field.key, $event)"
+          >
+            <option value="">TODOS</option>
+            @for (option of field.options; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        } @else {
+          <input
+            [attr.type]="field.type || 'text'"
+            [id]="'filter-' + field.key"
+            [name]="field.key"
+            [ngModel]="formValues()[field.key] || ''"
+            (ngModelChange)="updateFieldValue(field.key, $event)"
+            [placeholder]="field.placeholder || 'Filtrar por ' + field.label.toLowerCase() + '...'"
+          />
+        }
+      </div>
+    }
+  </div>
+
+  <div class="filters-actions">
+    <button (click)="onReset()" class="button-text" [disabled]="loading()" type="button">
+      Limpiar
+    </button>
+    <button class="button button-primary" [disabled]="loading()" type="submit">
+      {{ loading() ? 'Buscando...' : 'Aplicar filtros' }}
+    </button>
+  </div>
+</form>

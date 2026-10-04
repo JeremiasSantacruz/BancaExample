@@ -1,5 +1,7 @@
 package santacruz.jeremias.bancaExample.application.usecase;
 
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import org.junit.jupiter.api.Test;
 import santacruz.jeremias.bancaExample.application.command.CreateCuentaCommand;
 import santacruz.jeremias.bancaExample.application.command.CuentaCommand;
@@ -57,10 +59,13 @@ class CuentaEntityServiceTest {
 
     @Test
     void shouldReturnAllCuentas() {
-        when(persistence.listarTodas(7L)).thenReturn(List.of(cuenta("42"), cuenta("43")));
+        Paginacion paginacion = Paginacion.of(0, "10");
+        when(persistence.listarTodas(7L, paginacion))
+                .thenReturn(Pagina.of(List.of(cuenta("42"), cuenta("43")), 0, 10, 2));
 
-        assertThat(service.obtenerTodas("7")).extracting(Cuenta::cuentaId).containsExactly("42", "43");
-        verify(persistence).listarTodas(7L);
+        assertThat(service.obtenerTodas("7", paginacion).content())
+                .extracting(Cuenta::cuentaId).containsExactly("42", "43");
+        verify(persistence).listarTodas(7L, paginacion);
     }
 
     @Test

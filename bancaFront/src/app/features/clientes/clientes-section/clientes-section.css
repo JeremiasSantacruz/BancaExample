@@ -1,0 +1,9 @@
+:host {
+  display: block;
+}
+
+.plus {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+}

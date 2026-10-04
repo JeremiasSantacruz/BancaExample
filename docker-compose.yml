@@ -1,0 +1,60 @@
+# Levanta la aplicacion completa: PostgreSQL, backend Spring Boot y frontend
+# Angular servido por nginx.
+#
+#   docker compose up --build
+#
+# Frontend:   http://localhost:4200  (tambien en /api el proxy hacia el backend)
+# Backend:    http://localhost:8080
+# PostgreSQL: localhost:5432
+#
+# Los contenedores se nombran `<proyecto>-<servicio>-1`. No se fija
+# `container_name` para poder levantar varias copias del stack en paralelo; el
+# proyecto toma por defecto el nombre del directorio (`bancaexample`), que es el
+# que ya usa el volumen `bancaexample_postgres_data` con los datos de desarrollo.
+services:
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-banca_example}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://database:5432/${DB_NAME:-banca_example}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      MAXIMO_RETIRO_DIARIO: ${MAXIMO_RETIRO_DIARIO:-1000.00}
+      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75.0}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    build:
+      context: ./frontend/bancaFront
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-4200}:80"
+
+volumes:
+  postgres_data:

@@ -3,13 +3,14 @@ package santacruz.jeremias.bancaExample.infrastructure.adapterIn;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import santacruz.jeremias.bancaExample.application.command.ClienteCommand;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.application.port.in.ClienteUseCase;
 import santacruz.jeremias.bancaExample.domain.model.Cliente;
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.contracts.ClienteContracts;
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.ClienteResponse;
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.ClienteRequest;
 
-import java.util.List;
 import java.util.Locale;
 
 @RestController
@@ -28,10 +29,14 @@ public class ClienteController implements ClienteContracts {
     }
 
     @GetMapping()
-    public List<ClienteResponse> obtenerClientes(@RequestParam(required = false) String nombre,
+    public Pagina<ClienteResponse> obtenerClientes(@RequestParam(required = false) String nombre,
                                         @RequestParam(required = false) String identificacion,
-                                        @RequestParam(required = false) String estado) {
-        return clienteUseCase.buscar(nombre, identificacion, estado).stream().map(this::toResponse).toList();
+                                        @RequestParam(required = false) String estado,
+                                        @RequestParam(required = false) String search,
+                                        @RequestParam(required = false) Integer page,
+                                        @RequestParam(required = false) String size) {
+        return clienteUseCase.buscar(nombre, identificacion, estado, search, Paginacion.of(page, size))
+                .map(this::toResponse);
     }
 
     @GetMapping("/{clienteId}")

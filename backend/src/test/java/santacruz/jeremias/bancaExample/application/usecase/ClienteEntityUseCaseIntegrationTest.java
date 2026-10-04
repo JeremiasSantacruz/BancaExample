@@ -1,5 +1,6 @@
 package santacruz.jeremias.bancaExample.application.usecase;
 
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -76,7 +77,7 @@ class ClienteEntityUseCaseIntegrationTest {
         clienteUseCase.crear(command("Ana", "123456"));
         clienteUseCase.crear(command("Luis", "654321"));
 
-        assertThat(clienteUseCase.buscar(null, null, null))
+        assertThat(clienteUseCase.buscar(null, null, null, null, Paginacion.porDefecto()).content())
                 .extracting(Cliente::nombre)
                 .containsExactlyInAnyOrder("Ana", "Luis");
     }
@@ -125,7 +126,8 @@ class ClienteEntityUseCaseIntegrationTest {
 
         Cliente inactivo = clienteUseCase.obtenerPorId(creado.clienteId());
         assertThat(inactivo.estado()).isEqualTo(EstadoCliente.INACTIVO);
-        assertThat(clienteUseCase.buscar(null, null, null)).extracting(Cliente::clienteId)
+        assertThat(clienteUseCase.buscar(null, null, null, null, Paginacion.porDefecto()).content())
+                .extracting(Cliente::clienteId)
                 .containsExactly(creado.clienteId());
     }
 

@@ -1,0 +1,121 @@
+<app-form-dialog
+  (closed)="closed.emit()"
+  [busy]="busy()"
+  [error]="error()"
+  formId="cliente-form"
+  [subtitle]="
+    cliente()
+      ? 'Actualizá los datos del cliente y guardá los cambios.'
+      : 'Completá los datos para registrar un cliente.'
+  "
+  [title]="cliente() ? 'Editar cliente' : 'Nuevo cliente'"
+  [submitLabel]="cliente() ? 'Guardar cambios' : 'Crear cliente'"
+>
+  <form id="cliente-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form-grid">
+      <app-form-field
+        controlId="cliente-nombre"
+        label="Nombre completo"
+        [error]="errorFor('nombre')"
+        [required]="true"
+      >
+        <input
+          id="cliente-nombre"
+          formControlName="nombre"
+          placeholder="Juan Pérez"
+          type="text"
+        />
+      </app-form-field>
+
+      <app-form-field
+        controlId="cliente-identificacion"
+        label="Identificación"
+        [error]="errorFor('identificacion')"
+        [required]="true"
+      >
+        <input
+          id="cliente-identificacion"
+          formControlName="identificacion"
+          placeholder="DNI o CUIT"
+          type="text"
+        />
+      </app-form-field>
+
+      <app-form-field
+        controlId="cliente-telefono"
+        label="Teléfono"
+        [error]="errorFor('telefono')"
+        [required]="true"
+      >
+        <input
+          id="cliente-telefono"
+          formControlName="telefono"
+          placeholder="+54 341 000 0000"
+          type="tel"
+        />
+      </app-form-field>
+
+      <app-form-field
+        controlId="cliente-edad"
+        hint="Entre 18 y 120 años."
+        label="Edad"
+        [error]="errorFor('edad')"
+        [required]="true"
+      >
+        <input id="cliente-edad" formControlName="edad" max="120" min="18" type="number" />
+      </app-form-field>
+
+      <app-form-field
+        controlId="cliente-genero"
+        label="Género"
+        [error]="errorFor('genero')"
+        [required]="true"
+      >
+        <input id="cliente-genero" formControlName="genero" placeholder="Femenino" type="text" />
+      </app-form-field>
+
+      <app-form-field
+        controlId="cliente-direccion"
+        label="Dirección"
+        [error]="errorFor('direccion')"
+        [required]="true"
+      >
+        <input
+          id="cliente-direccion"
+          formControlName="direccion"
+          placeholder="Calle y número"
+          type="text"
+        />
+      </app-form-field>
+
+      <app-form-field
+        controlId="cliente-contrasena"
+        hint="Mínimo 6 caracteres."
+        label="Contraseña"
+        [error]="errorFor('contrasena')"
+        [required]="true"
+      >
+        <input
+          id="cliente-contrasena"
+          formControlName="contrasena"
+          placeholder="••••••"
+          type="password"
+        />
+      </app-form-field>
+
+      <app-form-field
+        controlId="cliente-estado"
+        hint="Solo ACTIVO habilita cuentas y movimientos."
+        label="Estado"
+        [error]="errorFor('estado')"
+        [required]="true"
+      >
+        <select id="cliente-estado" formControlName="estado">
+          @for (estado of estados; track estado) {
+            <option [value]="estado">{{ estado }}</option>
+          }
+        </select>
+      </app-form-field>
+    </div>
+  </form>
+</app-form-dialog>

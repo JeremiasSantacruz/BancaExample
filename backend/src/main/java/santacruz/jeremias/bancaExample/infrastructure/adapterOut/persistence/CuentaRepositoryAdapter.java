@@ -1,7 +1,10 @@
 package santacruz.jeremias.bancaExample.infrastructure.adapterOut.persistence;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.application.port.out.CuentaPersistencePort;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoCuenta;
 import santacruz.jeremias.bancaExample.domain.enums.TipoCuenta;
@@ -17,10 +20,23 @@ import java.util.Optional;
 
 @Repository
 public class CuentaRepositoryAdapter implements CuentaPersistencePort {
+
+    /** Orden estable para poder cortar páginas sin repetir ni perder cuentas. */
+    private static final Sort ORDEN_POR_DEFECTO = Sort.by(Sort.Order.asc("id"));
+
     @Override
-    public List<Cuenta> buscar(String clienteId, String tipoCuenta, String estado) {
-        return cuentaJpaRepository.searchAll(clienteId == null ? null : parseId(clienteId), tipoCuenta, estado)
-                .stream().map(this::toDomain).toList();
+    public Pagina<Cuenta> buscar(
+            String clienteId, String tipoCuenta, String estado, String search, Paginacion paginacion
+    ) {
+        return PaginacionSpringData.toPagina(
+                cuentaJpaRepository.searchAll(
+                        clienteId == null ? null : parseId(clienteId), tipoCuenta, estado, search,
+                        PaginacionSpringData.toIdOpcional(search),
+                        PaginacionSpringData.toPageable(paginacion, ORDEN_POR_DEFECTO)
+                ),
+                paginacion,
+                this::toDomain
+        );
     }
 
 
@@ -48,8 +64,26 @@ public class CuentaRepositoryAdapter implements CuentaPersistencePort {
     }
 
     @Override
-    public List<Cuenta> listarTodas(Long clienteId) {
-        return cuentaJpaRepository.findAllByClienteEntity_Id(clienteId).stream().map(this::toDomain).toList();
+    public Pagina<Cuenta> listarTodas(Long clienteId, Paginacion paginacion) {
+        if (clienteId == null) {
+            return Pagina.vacia(paginacion.page(), paginacion.size());
+        }
+
+        if (paginacion.todos()) {
+            List<Cuenta> cuentas = cuentaJpaRepository.findAllByClienteEntity_Id(clienteId)
+                    .stream().map(this::toDomain).toList();
+
+            return Pagina.of(cuentas, 0, cuentas.size(), cuentas.size());
+        }
+
+        return PaginacionSpringData.toPagina(
+                cuentaJpaRepository.searchAll(
+                        clienteId, null, null, null, null,
+                        PaginacionSpringData.toPageable(paginacion, ORDEN_POR_DEFECTO)
+                ),
+                paginacion,
+                this::toDomain
+        );
     }
 
     @Override

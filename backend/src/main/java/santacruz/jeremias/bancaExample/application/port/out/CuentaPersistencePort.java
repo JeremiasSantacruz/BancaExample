@@ -1,5 +1,7 @@
 package santacruz.jeremias.bancaExample.application.port.out;
 
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.domain.model.Cuenta;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoCuenta;
 
@@ -7,11 +9,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CuentaPersistencePort {
-    List<Cuenta> buscar(String clienteId, String tipoCuenta, String estado);
+    Pagina<Cuenta> buscar(String clienteId, String tipoCuenta, String estado, String search, Paginacion paginacion);
 
     Cuenta guardar(Cuenta cuenta);
 
-    List<Cuenta> listarTodas(Long clienteId);
+    Pagina<Cuenta> listarTodas(Long clienteId, Paginacion paginacion);
 
     Optional<Cuenta> buscarPorId(String cuentaId);
 

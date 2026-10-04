@@ -1,0 +1,12 @@
+# Ignora todo lo que no se necesita para compilar la SPA.
+node_modules/
+dist/
+.angular/
+
+# Configuracion local del IDE y del sistema.
+.idea/
+.vscode/
+*.iml
+
+.DS_Store
+npm-debug.log*

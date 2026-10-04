@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import santacruz.jeremias.bancaExample.application.command.MovimientoCommand;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.application.port.in.CalcularSaldoUseCase;
 import santacruz.jeremias.bancaExample.application.port.in.MovimientosUseCase;
 import santacruz.jeremias.bancaExample.application.port.out.CuentaPersistencePort;
@@ -106,17 +108,21 @@ public class MovimientosService implements MovimientosUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Movimiento> buscar(String cuentaId, LocalDate inicio, LocalDate fin) {
+    public Pagina<Movimiento> buscar(
+            String cuentaId, LocalDate inicio, LocalDate fin, String search, Paginacion paginacion
+    ) {
         if (inicio != null && fin != null && inicio.isAfter(fin)) {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin.");
         }
-        return movimientoPersistence.buscar(FiltrosBusqueda.id(cuentaId), inicio, fin);
+        return movimientoPersistence.buscar(
+                FiltrosBusqueda.id(cuentaId), inicio, fin, FiltrosBusqueda.texto(search), paginacion
+        );
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Movimiento> obtenerTodos() {
-        return movimientoPersistence.listarTodos();
+    public Pagina<Movimiento> obtenerTodos(Paginacion paginacion) {
+        return movimientoPersistence.listarTodos(paginacion);
     }
 
     @Override

@@ -1,0 +1,77 @@
+<app-form-dialog
+  (closed)="closed.emit()"
+  [busy]="busy()"
+  [error]="error()"
+  formId="cuenta-form"
+  [subtitle]="
+    cuenta()
+      ? 'Actualizá el tipo, el estado o el saldo de la cuenta.'
+      : 'Elegí el cliente y el tipo de cuenta.'
+  "
+  [title]="cuenta() ? 'Editar cuenta ' + cuenta()!.cuentaId : 'Nueva cuenta'"
+  [submitLabel]="cuenta() ? 'Guardar cambios' : 'Crear cuenta'"
+>
+  <form id="cuenta-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form-grid">
+      <app-form-field
+        controlId="cuenta-cliente"
+        hint="Solo los clientes ACTIVO pueden tener cuentas."
+        label="Cliente"
+        [error]="errorFor('clienteId')"
+        [required]="true"
+      >
+        <select id="cuenta-cliente" formControlName="clienteId">
+          <option disabled value="">Selecciona un cliente</option>
+          @for (cliente of clientes(); track cliente.clienteId) {
+            <option [value]="cliente.clienteId">
+              {{ cliente.nombre }} ({{ cliente.identificacion }})
+            </option>
+          }
+        </select>
+      </app-form-field>
+
+      <app-form-field
+        controlId="cuenta-tipo"
+        label="Tipo de cuenta"
+        [error]="errorFor('tipoCuenta')"
+        [required]="true"
+      >
+        <select id="cuenta-tipo" formControlName="tipoCuenta">
+          @for (tipo of tipos; track tipo) {
+            <option [value]="tipo">{{ tipo }}</option>
+          }
+        </select>
+      </app-form-field>
+
+      <app-form-field
+        controlId="cuenta-estado"
+        hint="Solo ACTIVA permite mover saldo."
+        label="Estado"
+        [error]="errorFor('estado')"
+        [required]="true"
+      >
+        <select id="cuenta-estado" formControlName="estado">
+          @for (estado of estados; track estado) {
+            <option [value]="estado">{{ estado }}</option>
+          }
+        </select>
+      </app-form-field>
+
+      <app-form-field
+        controlId="cuenta-saldo"
+        hint="El saldo se recalcula con los movimientos aplicados."
+        label="Saldo"
+        [error]="errorFor('saldoInicial')"
+      >
+        <input
+          id="cuenta-saldo"
+          formControlName="saldoInicial"
+          min="0"
+          placeholder="0.00"
+          step="0.01"
+          type="number"
+        />
+      </app-form-field>
+    </div>
+  </form>
+</app-form-dialog>

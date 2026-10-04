@@ -1,0 +1,15 @@
+# Artefactos de build: la imagen los genera el builder, no tiene copiarlos.
+build/
+.gradle/
+gradle-app.setting
+
+# Configuración local del IDE.
+.idea/
+*.iml
+*.ipr
+*.iws
+
+Logs y temporales.
+logs/
+*.log
+*.tmp

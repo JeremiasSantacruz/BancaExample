@@ -1,0 +1,22 @@
+<div class="table-toolbar">
+  <div>
+    <h2>{{ title() }}</h2>
+    <span class="muted">{{ recordCount() }} registros</span>
+  </div>
+
+  <div class="toolbar-controls">
+    <ng-content select="[toolbarExtra]" />
+
+    <label class="search-field">
+      <span aria-hidden="true">⌕</span>
+      <input
+        (ngModelChange)="searchTermChange.emit($event)"
+        [attr.aria-label]="searchLabel()"
+        [disabled]="loading()"
+        [ngModel]="searchTerm()"
+        [placeholder]="searchPlaceholder()"
+        type="search"
+      />
+    </label>
+  </div>
+</div>

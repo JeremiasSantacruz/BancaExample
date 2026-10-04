@@ -1,0 +1,104 @@
+<app-form-dialog
+  (closed)="closed.emit()"
+  [busy]="busy()"
+  [error]="error()"
+  formId="movimiento-form"
+  subtitle="Los retiros están sujetos al saldo disponible y al límite diario configurado."
+  title="Nuevo movimiento"
+  submitLabel="Registrar movimiento"
+>
+  <form id="movimiento-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form-grid">
+      <app-form-field
+        controlId="movimiento-cuenta"
+        hint="Solo las cuentas ACTIVA de clientes ACTIVO."
+        label="Cuenta"
+        [error]="errorFor('cuentaId')"
+        [required]="true"
+      >
+        <select id="movimiento-cuenta" formControlName="cuentaId">
+          <option disabled value="">Selecciona una cuenta</option>
+          @for (cuenta of cuentas(); track cuenta.cuentaId) {
+            <option [value]="cuenta.cuentaId">
+              {{ cuenta.cuentaId }} · {{ cuenta.tipoCuenta }} · {{ formatCurrency(cuenta.saldo) }}
+            </option>
+          }
+        </select>
+      </app-form-field>
+
+      <app-form-field
+        controlId="movimiento-fecha"
+        label="Fecha y hora"
+        [error]="errorFor('fecha')"
+        [required]="true"
+      >
+        <input id="movimiento-fecha" formControlName="fecha" type="datetime-local" />
+      </app-form-field>
+
+      <app-form-field
+        controlId="movimiento-tipo"
+        label="Tipo de movimiento"
+        [error]="errorFor('tipoMovimiento')"
+        [required]="true"
+      >
+        <select id="movimiento-tipo" formControlName="tipoMovimiento">
+          @for (tipo of tipos; track tipo) {
+            <option [value]="tipo">{{ tipo === 'DEPOSITO' ? 'Depósito' : 'Retiro' }}</option>
+          }
+        </select>
+      </app-form-field>
+
+      <app-form-field
+        controlId="movimiento-valor"
+        hint="Debe ser mayor que cero."
+        label="Valor"
+        [error]="errorFor('valor')"
+        [required]="true"
+      >
+        <input
+          id="movimiento-valor"
+          formControlName="valor"
+          min="0.01"
+          placeholder="0.00"
+          step="0.01"
+          type="number"
+        />
+      </app-form-field>
+
+      <app-form-field
+        controlId="movimiento-estado"
+        hint="Solo APPROVED mueve el saldo de la cuenta."
+        label="Estado"
+        [error]="errorFor('estado')"
+        [required]="true"
+      >
+        <select id="movimiento-estado" formControlName="estado">
+          @for (estado of estados; track estado) {
+            <option [value]="estado">{{ estado }}</option>
+          }
+        </select>
+      </app-form-field>
+    </div>
+
+    @if (selectedCuenta(); as cuenta) {
+      <aside class="account-summary">
+        <div>
+          <span class="summary-label">Titular</span>
+          <span class="summary-value">{{ customerName(cuenta.clienteId) }}</span>
+        </div>
+        <div>
+          <span class="summary-label">Saldo disponible</span>
+          <span class="summary-value">{{ formatCurrency(cuenta.saldo) }}</span>
+        </div>
+        @if (isRetiro()) {
+          <div>
+            <span class="summary-label">Retirado hoy</span>
+            <span class="summary-value">
+              {{ formatCurrency(dailyWithdrawal()?.totalExtraido) }}
+            </span>
+          </div>
+        }
+      </aside>
+    }
+  </form>
+</app-form-dialog>

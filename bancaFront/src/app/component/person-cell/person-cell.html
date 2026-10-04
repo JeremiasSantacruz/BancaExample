@@ -1,0 +1,9 @@
+<div class="person-cell">
+  <span class="person-avatar" aria-hidden="true">{{ avatarInitial() }}</span>
+  <div class="person-detail">
+    <strong>{{ name() }}</strong>
+    @if (subtitle()) {
+      <small>{{ subtitle() }}</small>
+    }
+  </div>
+</div>

@@ -1,0 +1,47 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.bank-app {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  min-height: 100vh;
+}
+
+.main-area {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.page-content {
+  flex: 1;
+  width: min(var(--max-content-width), 100%);
+  margin: 0 auto;
+  padding: 38px 42px 56px;
+}
+
+@media (max-width: 950px) {
+  .page-content {
+    padding: 30px 26px 45px;
+  }
+}
+
+@media (max-width: 700px) {
+  .bank-app {
+    display: block;
+  }
+
+  .page-content {
+    padding: 25px 15px 40px;
+  }
+}
+
+@media print {
+  .page-content {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}

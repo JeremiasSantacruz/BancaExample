@@ -6,16 +6,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import santacruz.jeremias.bancaExample.application.command.MovimientoCommand;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.application.port.in.MovimientosUseCase;
+import santacruz.jeremias.bancaExample.domain.enums.EstadoTransaccionMovimiento;
 import santacruz.jeremias.bancaExample.domain.enums.TipoMovimiento;
 import santacruz.jeremias.bancaExample.domain.model.Movimiento;
-import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.MovimientoEstadoRequest;
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.MovimientoRequest;
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.MovimientoResponse;
 import santacruz.jeremias.bancaExample.infrastructure.adapterIn.dto.SaldoExtraccionesDiariasResponse;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/movimientos")
@@ -38,20 +39,23 @@ public class MovimientosController {
     }
 
     @GetMapping("/buscar")
-    public List<MovimientoResponse> buscar(
+    public Pagina<MovimientoResponse> buscar(
             @RequestParam(required = false) String cuentaId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) String size
     ) {
-        return movimientosUseCase.buscar(cuentaId, inicio, fin).stream().map(this::toResponse).toList();
+        return movimientosUseCase.buscar(cuentaId, inicio, fin, search, Paginacion.of(page, size))
+                .map(this::toResponse);
     }
 
 
     @GetMapping
-    public List<MovimientoResponse> obtenerMovimientos() {
-        return movimientosUseCase.obtenerTodos().stream()
-                .map(this::toResponse)
-                .toList();
+    public Pagina<MovimientoResponse> obtenerMovimientos(@RequestParam(required = false) Integer page,
+                                                         @RequestParam(required = false) String size) {
+        return movimientosUseCase.obtenerTodos(Paginacion.of(page, size)).map(this::toResponse);
     }
 
     @GetMapping("/cuentas/{cuentaId}/extracciones-diarias")
@@ -73,11 +77,10 @@ public class MovimientosController {
 
     @PutMapping("/{movimientoId}")
     public MovimientoResponse actualizar(
-            @PathVariable String movimientoId,
-            @Valid @RequestBody MovimientoEstadoRequest request
+            @PathVariable String movimientoId
     ) {
         return toResponse(movimientosUseCase.actualizar(movimientoId,
-                new MovimientoCommand(null, null, null, null, request.estado())));
+                new MovimientoCommand(null, null, null, null, EstadoTransaccionMovimiento.REVERSED)));
     }
 
     @DeleteMapping("/{movimientoId}")

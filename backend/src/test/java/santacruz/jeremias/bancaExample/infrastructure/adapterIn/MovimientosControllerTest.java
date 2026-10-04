@@ -1,5 +1,7 @@
 package santacruz.jeremias.bancaExample.infrastructure.adapterIn;
 
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -50,17 +52,19 @@ class MovimientosControllerTest {
 
     @Test
     void shouldListAndGetMovimientos() throws Exception {
-        when(movimientosUseCase.obtenerTodos()).thenReturn(List.of(movimiento()));
+        when(movimientosUseCase.obtenerTodos(Paginacion.porDefecto()))
+                .thenReturn(Pagina.of(List.of(movimiento()), 0, 10, 1));
         when(movimientosUseCase.obtenerPorId("42")).thenReturn(movimiento());
 
         mockMvc.perform(get("/movimientos"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].tipoMovimiento").value("RETIRO"));
+                .andExpect(jsonPath("$.content[0].tipoMovimiento").value("RETIRO"))
+                .andExpect(jsonPath("$.totalElements").value(1));
         mockMvc.perform(get("/movimientos/42"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.movimientoId").value("42"));
 
-        verify(movimientosUseCase).obtenerTodos();
+        verify(movimientosUseCase).obtenerTodos(Paginacion.porDefecto());
         verify(movimientosUseCase).obtenerPorId("42");
     }
 

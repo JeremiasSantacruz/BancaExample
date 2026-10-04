@@ -12,6 +12,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import santacruz.jeremias.bancaExample.application.dto.Pagina;
+import santacruz.jeremias.bancaExample.application.dto.Paginacion;
 import santacruz.jeremias.bancaExample.domain.enums.EstadoCliente;
 import santacruz.jeremias.bancaExample.domain.model.Cliente;
 import santacruz.jeremias.bancaExample.domain.model.Persona;
@@ -120,12 +122,75 @@ class ClienteEntityRepositoryAdapterTest {
         entityManager.flush();
         entityManager.clear();
 
-        var clientes = adapter.buscar(null, null, null);
+        Pagina<Cliente> clientes = adapter.buscar(null, null, null, null, Paginacion.porDefecto());
 
-        assertThat(clientes).hasSize(2);
-        assertThat(clientes).extracting(Cliente::clienteId).doesNotContainNull();
-        assertThat(clientes).extracting(Cliente::nombre)
+        assertThat(clientes.content()).hasSize(2);
+        assertThat(clientes.content()).extracting(Cliente::clienteId).doesNotContainNull();
+        assertThat(clientes.content()).extracting(Cliente::nombre)
                 .containsExactlyInAnyOrder("Ana", "Luis");
+        assertThat(clientes.totalElements()).isEqualTo(2);
+        assertThat(clientes.totalPages()).isEqualTo(1);
+        assertThat(clientes.first()).isTrue();
+        assertThat(clientes.last()).isTrue();
+    }
+
+    @Test
+    void shouldSplitClientesIntoPages() {
+        adapter.guardar(cliente(null, "123456", "Ana", "clave", "activo"));
+        adapter.guardar(cliente(null, "654321", "Luis", "clave-2", "activo"));
+        adapter.guardar(cliente(null, "112233", "Marta", "clave-3", "activo"));
+        entityManager.flush();
+        entityManager.clear();
+
+        Pagina<Cliente> primera = adapter.buscar(null, null, null, null, Paginacion.of(0, "2"));
+        Pagina<Cliente> segunda = adapter.buscar(null, null, null, null, Paginacion.of(1, "2"));
+
+        assertThat(primera.content()).extracting(Cliente::nombre).containsExactly("Ana", "Luis");
+        assertThat(primera.totalElements()).isEqualTo(3);
+        assertThat(primera.totalPages()).isEqualTo(2);
+        assertThat(primera.first()).isTrue();
+        assertThat(primera.last()).isFalse();
+
+        assertThat(segunda.content()).extracting(Cliente::nombre).containsExactly("Marta");
+        assertThat(segunda.first()).isFalse();
+        assertThat(segunda.last()).isTrue();
+    }
+
+    @Test
+    void shouldReturnEveryClienteWhenPaginationIsUnbounded() {
+        adapter.guardar(cliente(null, "123456", "Ana", "clave", "activo"));
+        adapter.guardar(cliente(null, "654321", "Luis", "clave-2", "activo"));
+        entityManager.flush();
+        entityManager.clear();
+
+        Pagina<Cliente> clientes = adapter.buscar(null, null, null, null, Paginacion.of(0, "all"));
+
+        assertThat(clientes.content()).hasSize(2);
+        assertThat(clientes.totalElements()).isEqualTo(2);
+        assertThat(clientes.totalPages()).isEqualTo(1);
+        assertThat(clientes.last()).isTrue();
+    }
+
+    @Test
+    void shouldFilterClientesBySearchTextAndId() {
+        Cliente ana = adapter.guardar(cliente(null, "123456", "Ana", "clave", "activo"));
+        adapter.guardar(cliente(null, "654321", "Luis", "clave-2", "activo"));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(adapter.buscar(null, null, null, "luis", Paginacion.porDefecto()).content())
+                .extracting(Cliente::nombre).containsExactly("Luis");
+
+        assertThat(adapter.buscar(null, null, null, "123456", Paginacion.porDefecto()).content())
+                .extracting(Cliente::nombre).containsExactly("Ana");
+
+        // Por id trae al cliente exacto, aunque el número también pueda aparecer
+        // dentro del texto de otro cliente (teléfono, dirección, identificación).
+        assertThat(adapter.buscar(null, null, null, String.valueOf(ana.clienteId()), Paginacion.porDefecto()).content())
+                .extracting(Cliente::nombre).contains("Ana");
+
+        assertThat(adapter.buscar(null, null, null, "nadie", Paginacion.porDefecto()).content())
+                .isEmpty();
     }
 
     @Test
