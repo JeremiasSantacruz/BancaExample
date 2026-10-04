@@ -1,0 +1,127 @@
+<div class="summary-grid">
+  <article
+    [value]="cuentas.length"
+    app-summary-card
+    caption="Registradas"
+    icon="$"
+    label="Total cuentas"
+    tone="blue"
+  ></article>
+  <article
+    [value]="activeCuentas"
+    app-summary-card
+    caption="Operativas"
+    icon="✓"
+    label="Cuentas activas"
+    tone="green"
+  ></article>
+  <article
+    [value]="formatCurrency(totalSaldo)"
+    app-summary-card
+    caption="Todas las cuentas"
+    icon="∑"
+    label="Saldo total"
+    tone="amber"
+  ></article>
+</div>
+<section class="data-card">
+  <app-search-filters
+    (filtersSearch)="filtersSearch.emit($event)"
+    [fields]="filterFields"
+    [loading]="searching"
+    [values]="filterValues"
+  />
+  <div class="table-toolbar">
+    <div>
+      <h2>Listado de cuentas</h2>
+      <span class="muted">{{ filteredCuentas.length }} registros</span>
+    </div>
+    <div class="toolbar-filters">
+      <select
+        (ngModelChange)="accountClientFilterChange.emit($event)"
+        [ngModel]="accountClientFilter"
+        aria-label="Filtrar por cliente"
+        class="filter-select"
+      >
+        <option value="">Todos los clientes</option>
+        @for (cliente of clientes; track cliente.clienteId) {
+          <option [value]="cliente.clienteId">{{ cliente.nombre }}</option>
+        }
+      </select>
+      <label class="search-field"
+      ><span>⌕</span
+      ><input
+        (ngModelChange)="searchTermChange.emit($event)"
+        [ngModel]="searchTerm"
+        aria-label="Buscar cuentas"
+        placeholder="Buscar cuenta"
+      /></label>
+    </div>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead>
+      <tr>
+        <th>NÚMERO DE CUENTA</th>
+        <th>CLIENTE</th>
+        <th>TIPO</th>
+        <th>SALDO</th>
+        <th>ESTADO</th>
+        <th class="actions-heading">ACCIONES</th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (cuenta of filteredCuentas; track cuenta.cuentaId) {
+          <tr (click)="!busy && viewMovements.emit(cuenta)" [class.navigable-row]="!busy">
+            <td class="mono">
+              <button
+                (click)="$event.stopPropagation(); viewMovements.emit(cuenta)"
+                [attr.aria-label]="'Ver movimientos de la cuenta ' + cuenta.cuentaId"
+                [disabled]="busy"
+                class="record-link"
+                type="button"
+              >
+                {{ cuenta.cuentaId }}
+              </button>
+            </td>
+            <td>
+              <strong>{{ customerName(cuenta.clienteId) }}</strong>
+            </td>
+            <td>{{ cuenta.tipoCuenta }}</td>
+            <td class="amount">{{ formatCurrency(cuenta.saldoInicial) }}</td>
+            <td>
+              <span [class.status-good]="cuenta.estado === 'ACTIVA'" class="status">{{
+                  cuenta.estado
+                }}</span>
+            </td>
+            <td (click)="$event.stopPropagation()" class="row-actions">
+              <button
+                (click)="editCuenta.emit(cuenta)"
+                [disabled]="busy"
+                class="text-action"
+                type="button"
+              >
+                Editar
+              </button
+              >
+              <button
+                (click)="deleteCuenta.emit(cuenta)"
+                [disabled]="busy"
+                class="text-action danger-action"
+                type="button"
+              >
+                Cerrar
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td class="empty-state" colspan="6">
+              No hay cuentas para mostrar. Registra una cuenta nueva.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
