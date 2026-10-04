@@ -1,3 +1,18 @@
 spring:
   application:
     name: bancaExample
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/banca_example}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: update
+logging:
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+app:
+  movimientos:
+    maximo-retiro-diario: ${MAXIMO_RETIRO_DIARIO:1000.00}
