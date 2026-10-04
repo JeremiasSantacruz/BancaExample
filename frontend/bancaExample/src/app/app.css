@@ -1,0 +1,168 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.bank-app {
+  min-height: 100vh;
+  display: flex;
+}
+
+.main-area {
+  flex: 1;
+  min-width: 0;
+}
+
+.topbar {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 42px;
+  background: #fff;
+  border-bottom: 1px solid #eceef1;
+}
+
+.breadcrumb {
+  color: #929baa;
+  font-size: 12px;
+}
+
+.breadcrumb span {
+  margin: 0 9px;
+  color: #c3c9d1;
+}
+
+.breadcrumb strong {
+  color: #303949;
+  font-weight: 600;
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #455064;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #264e92;
+  background: #e9effb;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.page-content {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 38px 42px 56px;
+}
+
+.page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 27px;
+}
+
+h1 {
+  margin-top: 0;
+}
+
+h1 {
+  margin: 6px 0 5px;
+  color: #1d293c;
+  font: 800 27px 'Segoe UI',
+  sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.page-heading p {
+  margin: 0;
+  color: #8490a0;
+  font-size: 12px;
+}
+
+.plus {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+@media (max-width: 950px) {
+  .topbar {
+    padding: 0 26px;
+  }
+
+  .page-content {
+    padding: 30px 26px 45px;
+  }
+}
+
+@media (max-width: 700px) {
+  .bank-app {
+    display: block;
+  }
+
+  .topbar {
+    height: 53px;
+    padding: 0 17px;
+  }
+
+  .topbar-user {
+    font-size: 0;
+  }
+
+  .page-content {
+    padding: 25px 15px 40px;
+  }
+
+  .page-heading {
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+
+  .page-heading p {
+    max-width: 240px;
+    line-height: 1.45;
+  }
+
+  .page-heading .button {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 430px) {
+  .page-heading .button {
+    max-width: 130px;
+    white-space: normal;
+  }
+}
+
+@media print {
+  .topbar,
+  .page-heading {
+    display: none !important;
+  }
+
+  .main-area,
+  .page-content {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}

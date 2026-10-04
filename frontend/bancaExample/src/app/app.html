@@ -1,0 +1,162 @@
+<div class="bank-app">
+  <app-sidebar
+    (sectionSelected)="selectSection($event)"
+    [activeSection]="activeSection"
+    [clienteCount]="clientes.length"
+    [navigation]="navigation"
+  />
+
+  <main class="main-area">
+    <header class="topbar">
+      <div class="breadcrumb">
+        Inicio <span>/</span> <strong>{{ sectionTitle }}</strong>
+      </div>
+      <div class="topbar-user"><span class="avatar">AD</span><span>Administrador</span></div>
+    </header>
+
+    <section class="page-content">
+      <div class="page-heading">
+        <div>
+          <span class="eyebrow">BANCA · ADMINISTRACIÓN</span>
+          <h1>{{ activeSection === 'reportes' ? 'Reportes de movimientos' : sectionTitle }}</h1>
+          <p>
+            @switch (activeSection) {
+              @case ('clientes') {
+                Administra la información y el estado de tus clientes.
+              }
+              @case ('cuentas') {
+                Consulta y gestiona las cuentas bancarias.
+              }
+              @case ('movimientos') {
+                Registra y consulta depósitos y retiros.
+              }
+              @case ('reportes') {
+                Revisa la actividad del período y descarga el informe.
+              }
+            }
+          </p>
+        </div>
+        @if (activeSection !== 'reportes') {
+          <button
+            (click)="openCreateForm()"
+            [disabled]="busy"
+            class="button button-primary"
+            type="button"
+          >
+            <span class="plus">+</span> Nuevo
+            {{
+              activeSection === 'clientes'
+                ? 'cliente'
+                : activeSection === 'cuentas'
+                  ? 'cuenta'
+                  : 'movimiento'
+            }}
+          </button>
+        }
+      </div>
+
+      <app-notification [notification]="saveResult() ? null : notificationService.current()"/>
+
+      @if (activeSection === 'clientes') {
+        <app-clientes-section
+          (deleteCliente)="deleteCliente($event)"
+          (editCliente)="editCliente($event)"
+          (filtersSearch)="buscarClientes($event)"
+          (searchTermChange)="searchTerm = $event"
+          (viewAccounts)="verCuentasCliente($event)"
+          [activeClientes]="activeClientes"
+          [activeCuentas]="activeCuentas"
+          [busy]="busy"
+          [clientes]="clientes"
+          [filterValues]="clienteFilters"
+          [filteredClientes]="filteredClientes"
+          [searchTerm]="searchTerm"
+          [searching]="searchingClientes"
+        />
+      }
+
+      @if (activeSection === 'cuentas') {
+        <app-cuentas-section
+          (accountClientFilterChange)="accountClientFilter = $event"
+          (deleteCuenta)="deleteCuenta($event)"
+          (editCuenta)="editCuenta($event)"
+          (filtersSearch)="buscarCuentas($event)"
+          (searchTermChange)="searchTerm = $event"
+          (viewMovements)="verMovimientosCuenta($event)"
+          [accountClientFilter]="accountClientFilter"
+          [activeCuentas]="activeCuentas"
+          [busy]="busy"
+          [clientes]="clientes"
+          [cuentas]="cuentas"
+          [filterValues]="cuentaFilters"
+          [filteredCuentas]="filteredCuentas"
+          [searchTerm]="searchTerm"
+          [searching]="searchingCuentas"
+          [totalSaldo]="totalSaldo"
+        />
+      }
+
+      @if (activeSection === 'movimientos') {
+        <app-movimientos-section
+          (deleteMovimiento)="deleteMovimiento($event)"
+          (editMovimiento)="editMovimiento($event)"
+          (filtersSearch)="buscarMovimientos($event)"
+          (searchTermChange)="searchTerm = $event"
+          [appliedDeposits]="appliedDeposits"
+          [appliedWithdrawals]="appliedWithdrawals"
+          [busy]="busy"
+          [filterValues]="movimientoFilters"
+          [filteredMovimientos]="filteredMovimientos"
+          [movimientos]="movimientos"
+          [searchTerm]="searchTerm"
+          [searching]="searchingMovimientos"
+        />
+      }
+
+      @if (activeSection === 'reportes') {
+        <app-reportes-section
+          (clienteIdChange)="updateReportClient($event)"
+          (downloadReport)="downloadReport()"
+          (reportFromChange)="updateReportDate('reportFrom', $event)"
+          (reportToChange)="updateReportDate('reportTo', $event)"
+          (searchReport)="buscarReporte()"
+          [clienteId]="reportClientId"
+          [clientes]="clientes"
+          [consulted]="reportConsulted"
+          [reportCuentas]="reportCuentas"
+          [reportDepositos]="reportDepositos"
+          [reportFrom]="reportFrom"
+          [reportMovimientos]="reportMovimientos"
+          [reportRetiros]="reportRetiros"
+          [reportTo]="reportTo"
+          [searching]="searchingReport"
+        />
+      }
+    </section>
+  </main>
+</div>
+
+@if (formOpen) {
+  <app-record-form
+    (closeForm)="closeForm()"
+    (saveCliente)="saveCliente($event)"
+    (saveCuenta)="saveCuenta($event)"
+    (saveMovimiento)="saveMovimiento($event)"
+    [activeSection]="activeSection"
+    [busy]="busy"
+    [clienteEstados]="clienteEstados"
+    [clienteForm]="clienteForm"
+    [clientes]="clientes"
+    [cuentaEstados]="cuentaEstados"
+    [cuentaForm]="cuentaForm"
+    [cuentas]="cuentas"
+    [editingCliente]="editingCliente"
+    [editingCuenta]="editingCuenta"
+    [editingMovimiento]="editingMovimiento"
+    [movimientoForm]="movimientoForm"
+  />
+}
+
+@if (saveResult(); as result) {
+  <app-operation-result (dismissed)="dismissSaveResult()" [result]="result"/>
+}

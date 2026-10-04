@@ -1,0 +1,28 @@
+<aside class="sidebar">
+  <a (click)="$event.preventDefault(); sectionSelected.emit('clientes')" class="brand" href="#">
+    <span class="brand-mark">B</span>
+    <span>BANCO<span class="brand-caption">GESTIÓN FINANCIERA</span></span>
+  </a>
+
+  <div class="side-label">MENÚ PRINCIPAL</div>
+  <nav aria-label="Navegación principal">
+    @for (item of navigation; track item.id) {
+      <button
+        (click)="sectionSelected.emit(item.id)"
+        [class.active]="activeSection === item.id"
+        class="nav-item"
+      >
+        <span class="nav-marker">{{ item.marker }}</span>
+        <span>{{ item.label }}</span>
+        @if (item.id === 'clientes') {
+          <span class="nav-count">{{ clienteCount }}</span>
+        }
+      </button>
+    }
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="online-indicator"></div>
+    <div><strong>Panel administrativo</strong><span>Conectado al sistema</span></div>
+  </div>
+</aside>

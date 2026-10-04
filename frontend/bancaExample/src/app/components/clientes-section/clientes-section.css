@@ -1,0 +1,33 @@
+@import '../../shared/styles/section.css';
+@import '../../shared/styles/table.css';
+@import '../table-toolbar/table-toolbar.css';
+
+.person-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 210px;
+}
+
+.person-cell small {
+  display: block;
+  overflow: hidden;
+  max-width: 220px;
+  margin-top: 3px;
+  color: #9ca5b1;
+  font-size: 10px;
+  text-overflow: ellipsis;
+}
+
+.person-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #365b99;
+  background: #edf2fb;
+  font-size: 12px;
+  font-weight: 700;
+}

@@ -1,0 +1,53 @@
+.result-dialog {
+  width: min(420px, calc(100% - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 28px;
+  overflow-y: auto;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+  color: #253148;
+  text-align: center;
+  box-shadow: 0 20px 60px #0d152545;
+}
+
+.result-dialog::backdrop {
+  background: #111b2dcc;
+}
+
+.result-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #e8f6ef;
+  color: #32825c;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.result-error {
+  color: #9e3f3b;
+  background: #fff0ef;
+}
+
+h2 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+p {
+  color: #596579;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  .result-dialog {
+    display: none;
+  }
+}

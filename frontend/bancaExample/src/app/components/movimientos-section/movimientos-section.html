@@ -1,0 +1,48 @@
+<div class="summary-grid">
+  <article
+    [value]="movimientos.length"
+    app-summary-card
+    caption="Historial disponible"
+    icon="↕"
+    label="Total movimientos"
+    tone="blue"
+  ></article>
+  <article
+    [value]="formatCurrency(appliedDeposits)"
+    app-summary-card
+    caption="Importe acumulado"
+    icon="↓"
+    label="Depósitos aplicados"
+    tone="green"
+  ></article>
+  <article
+    [value]="formatCurrency(appliedWithdrawals)"
+    app-summary-card
+    caption="Importe acumulado"
+    icon="↑"
+    label="Retiros aplicados"
+    tone="amber"
+  ></article>
+</div>
+<section class="data-card">
+  <app-search-filters
+    (filtersSearch)="filtersSearch.emit($event)"
+    [fields]="filterFields"
+    [loading]="searching"
+    [values]="filterValues"
+  />
+  <app-table-toolbar
+    (searchTermChange)="searchTermChange.emit($event)"
+    [recordCount]="filteredMovimientos.length"
+    [searchTerm]="searchTerm"
+    searchLabel="Buscar movimientos"
+    searchPlaceholder="Buscar por cuenta, tipo o fecha"
+    title="Últimos movimientos"
+  />
+  <app-movimientos-table
+    (deleteMovimiento)="deleteMovimiento.emit($event)"
+    (editMovimiento)="editMovimiento.emit($event)"
+    [busy]="busy"
+    [movimientos]="filteredMovimientos"
+  />
+</section>

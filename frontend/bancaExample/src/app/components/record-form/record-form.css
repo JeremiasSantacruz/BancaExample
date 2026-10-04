@@ -1,0 +1,128 @@
+@import '../../shared/styles/notices.css';
+
+.modal-backdrop {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 24px;
+  background: #111b2dcc;
+}
+
+.form-modal {
+  width: min(590px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 25px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 20px 60px #0d152545;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 23px;
+}
+
+.modal-header h2 {
+  margin: 5px 0 0;
+  color: #253148;
+  font: 700 19px 'Segoe UI',
+  sans-serif;
+}
+
+.close-button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  color: #788395;
+  background: #f2f4f7;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px 13px;
+}
+
+.field {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  color: #586479;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.full-field {
+  grid-column: 1 / -1;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  height: 39px;
+  padding: 0 10px;
+  border: 1px solid #e1e5eb;
+  border-radius: 6px;
+  outline: none;
+  color: #344156;
+  background: #fff;
+  font-size: 11px;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: #7896c5;
+  box-shadow: 0 0 0 3px #4673bb17;
+}
+
+.field-error {
+  color: #be514d;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.form-hint {
+  margin: 14px 0 0;
+  color: #8d97a5;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 24px;
+  padding-top: 17px;
+  border-top: 1px solid #edf0f3;
+}
+
+@media (max-width: 700px) {
+  .modal-backdrop {
+    padding: 10px;
+  }
+
+  .form-modal {
+    max-height: calc(100vh - 20px);
+    padding: 18px;
+  }
+}
+
+@media (max-width: 430px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-field {
+    grid-column: auto;
+  }
+}

@@ -1,0 +1,118 @@
+<div class="summary-grid">
+  <article
+    [value]="clientes.length"
+    app-summary-card
+    caption="Registrados"
+    icon="C"
+    label="Total clientes"
+    tone="blue"
+  ></article>
+  <article
+    [value]="activeClientes"
+    app-summary-card
+    caption="Operativos"
+    icon="✓"
+    label="Clientes activos"
+    tone="green"
+  ></article>
+  <article
+    [value]="activeCuentas"
+    app-summary-card
+    caption="En el sistema"
+    icon="$"
+    label="Cuentas abiertas"
+    tone="amber"
+  ></article>
+</div>
+<section class="data-card">
+  <app-search-filters
+    (filtersSearch)="filtersSearch.emit($event)"
+    [fields]="filterFields"
+    [loading]="searching"
+    [values]="filterValues"
+  />
+  <div class="table-toolbar">
+    <div>
+      <h2>Listado de clientes</h2>
+      <span class="muted">{{ filteredClientes.length }} registros</span>
+    </div>
+    <label class="search-field"
+    ><span>⌕</span
+    ><input
+      (ngModelChange)="searchTermChange.emit($event)"
+      [ngModel]="searchTerm"
+      aria-label="Buscar clientes"
+      placeholder="Buscar por nombre, ID o teléfono"
+    /></label>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead>
+      <tr>
+        <th>CLIENTE</th>
+        <th>IDENTIFICACIÓN</th>
+        <th>TELÉFONO</th>
+        <th>EDAD</th>
+        <th>ESTADO</th>
+        <th class="actions-heading">ACCIONES</th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (cliente of filteredClientes; track cliente.clienteId) {
+          <tr (click)="!busy && viewAccounts.emit(cliente)" [class.navigable-row]="!busy">
+            <td>
+              <div class="person-cell">
+                <span class="person-avatar">{{ cliente.nombre.slice(0, 1).toUpperCase() }}</span>
+                <div>
+                  <button
+                    (click)="$event.stopPropagation(); viewAccounts.emit(cliente)"
+                    [attr.aria-label]="'Ver cuentas de ' + cliente.nombre"
+                    [disabled]="busy"
+                    class="record-link"
+                    type="button"
+                  >
+                    {{ cliente.nombre }}
+                  </button>
+                  <small>{{ cliente.direccion }}</small>
+                </div>
+              </div>
+            </td>
+            <td>{{ cliente.identificacion }}</td>
+            <td>{{ cliente.telefono }}</td>
+            <td>{{ cliente.edad }} años</td>
+            <td>
+              <span [class.status-good]="cliente.estado === 'ACTIVO'" class="status">{{
+                  cliente.estado
+                }}</span>
+            </td>
+            <td (click)="$event.stopPropagation()" class="row-actions">
+              <button
+                (click)="editCliente.emit(cliente)"
+                [disabled]="busy"
+                class="text-action"
+                type="button"
+              >
+                Editar
+              </button
+              >
+              <button
+                (click)="deleteCliente.emit(cliente)"
+                [disabled]="busy"
+                class="text-action danger-action"
+                type="button"
+              >
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td class="empty-state" colspan="6">
+              No hay clientes para mostrar. Crea un cliente para comenzar.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

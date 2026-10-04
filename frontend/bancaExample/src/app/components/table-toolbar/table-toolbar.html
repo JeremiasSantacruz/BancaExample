@@ -1,0 +1,14 @@
+<div class="table-toolbar">
+  <div>
+    <h2>{{ title }}</h2>
+    <span class="muted">{{ recordCount }} registros</span>
+  </div>
+  <label class="search-field"
+  ><span>⌕</span
+  ><input
+    (ngModelChange)="searchTermChange.emit($event)"
+    [attr.aria-label]="searchLabel"
+    [ngModel]="searchTerm"
+    [placeholder]="searchPlaceholder"
+  /></label>
+</div>

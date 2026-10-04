@@ -1,0 +1,60 @@
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  min-height: 77px;
+  padding: 14px 19px;
+  border-bottom: 1px solid #eceef1;
+}
+.table-toolbar h2 {
+  margin: 0 0 4px;
+  color: #273347;
+  font:
+    700 14px 'Segoe UI',
+    sans-serif;
+}
+.muted {
+  color: #9aa3af;
+  font-size: 10px;
+}
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(280px, 38vw);
+  height: 36px;
+  padding: 0 11px;
+  border: 1px solid #e5e8ed;
+  border-radius: 6px;
+  color: #919baa;
+  background: #fff;
+}
+.search-field span {
+  font-size: 20px;
+  line-height: 1;
+  transform: rotate(-20deg);
+}
+.search-field input {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  color: #384459;
+  background: transparent;
+  font-size: 11px;
+}
+.search-field input::placeholder {
+  color: #a3abb6;
+}
+@media (max-width: 700px) {
+  .table-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 14px;
+  }
+  .search-field {
+    width: 100%;
+  }
+}

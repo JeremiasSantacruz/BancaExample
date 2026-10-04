@@ -1,0 +1,36 @@
+<form (ngSubmit)="submit()" aria-label="Filtros de búsqueda" class="search-filters">
+  @for (field of fields; track field.key) {
+    <label
+    >{{ field.label }}
+      @if (field.options) {
+        <select
+          [(ngModel)]="draft[field.key]"
+          [attr.name]="field.key"
+          [disabled]="loading"
+          [name]="field.key"
+        >
+          <option value="">Todos</option>
+          @for (option of field.options; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      } @else {
+        <input
+          [(ngModel)]="draft[field.key]"
+          [attr.name]="field.key"
+          [disabled]="loading"
+          [name]="field.key"
+          type="text"
+        />
+      }
+    </label>
+  }
+  <div class="filter-actions">
+    <button [disabled]="loading" class="button button-primary" type="submit">
+      {{ loading ? 'Buscando…' : 'Buscar' }}
+    </button>
+    <button (click)="clear()" [disabled]="loading" class="button button-quiet" type="button">
+      Limpiar
+    </button>
+  </div>
+</form>
